@@ -37,10 +37,10 @@ module.exports = async () => {
 				useragent: ip.useragent.replace(/"/g, ''),
 				action: ip.action,
 				country: ip.country,
-				timestamp: ip.timestamp
-			}))
+				timestamp: ip.timestamp,
+			})),
 		}, {
-			headers: { 'Authorization': process.env.SEFINEK_API_SECRET }
+			headers: { 'Authorization': process.env.SEFINEK_API_SECRET },
 		});
 
 		log('log', `Successfully sent ${uniqueLogs.length} logs to Sefinek API. Status: ${res.status}`);

@@ -1,5 +1,5 @@
 module.exports = [
 	'/weryfikacja',
 	'/verification',
-	'/download'
+	'/download',
 ];

@@ -44,9 +44,9 @@ module.exports = () => {
 				{ action_neq: 'managed_challenge_skipped' },
 				{ action_neq: 'managed_challenge_non_interactive_solved' },
 				{ action_neq: 'managed_challenge_interactive_solved' },
-				{ action_neq: 'managed_challenge_bypassed' }
-			]
-		}
+				{ action_neq: 'managed_challenge_bypassed' },
+			],
+		},
 	};
 
 	return { query, variables };

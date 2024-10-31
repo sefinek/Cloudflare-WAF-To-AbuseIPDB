@@ -6,13 +6,13 @@ const CLOUDFLARE = {
 	'User-Agent': userAgent,
 	'Content-Type': 'application/json',
 	'Authorization': `Bearer ${process.env.CLOUDFLARE_API_KEY}`,
-	'X-Auth-Email': process.env.CLOUDFLARE_EMAIL
+	'X-Auth-Email': process.env.CLOUDFLARE_EMAIL,
 };
 
 const ABUSEIPDB = {
 	'User-Agent': userAgent,
 	'Content-Type': 'application/json',
-	'Key': process.env.ABUSEIPDB_API_KEY
+	'Key': process.env.ABUSEIPDB_API_KEY,
 };
 
 module.exports = { CLOUDFLARE, ABUSEIPDB };

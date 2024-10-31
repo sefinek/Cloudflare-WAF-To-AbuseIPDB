@@ -9,7 +9,7 @@ module.exports = it => {
 		{ label: 'Timestamp', value: it.datetime },
 		{ label: 'Ray ID', value: it.rayName },
 		{ label: 'Rule ID', value: it.ruleId },
-		{ label: 'UA', value: it.userAgent || 'Empty string' }
+		{ label: 'UA', value: it.userAgent || 'Empty string' },
 	];
 
 	const reportLines = fields

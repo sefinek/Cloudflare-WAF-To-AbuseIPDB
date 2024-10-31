@@ -49,7 +49,7 @@ const readReportedIPs = () => {
 				useragent: parts[6].replace(/(^"|"$)/g, ''),
 				action: parts[7],
 				status: parts[8],
-				sefinekAPI: parts[9] === 'true'
+				sefinekAPI: parts[9] === 'true',
 			};
 		})
 		.filter(item => item !== null);

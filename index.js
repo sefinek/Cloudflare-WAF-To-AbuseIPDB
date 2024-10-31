@@ -73,7 +73,7 @@ const reportIP = async (event, uri, country, hostname, endpoint, cycleErrorCount
 		await axios.post('https://api.abuseipdb.com/api/v2/report', {
 			ip: event.clientIP,
 			categories: '19',
-			comment: generateComment(event)
+			comment: generateComment(event),
 		}, { headers: headers.ABUSEIPDB });
 
 		logToCSV(event.rayName, event.clientIP, country, hostname, endpoint, event.userAgent, event.action, 'REPORTED');
