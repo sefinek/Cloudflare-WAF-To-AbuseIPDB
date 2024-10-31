@@ -11,13 +11,13 @@
     "abuseipdb-reporting",
     "node-abuseipdb"
   ],
-  "homepage": "https://github.com/sefinek24/Node-Cloudflare-WAF-AbuseIPDB#readme",
+  "homepage": "https://github.com/sefinek/Node-Cloudflare-WAF-AbuseIPDB#readme",
   "bugs": {
-    "url": "https://github.com/sefinek24/Node-Cloudflare-WAF-AbuseIPDB/issues"
+    "url": "https://github.com/sefinek/Node-Cloudflare-WAF-AbuseIPDB/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/sefinek24/Node-Cloudflare-WAF-AbuseIPDB.git"
+    "url": "git+https://github.com/sefinek/Node-Cloudflare-WAF-AbuseIPDB.git"
   },
   "license": "MIT",
   "author": "Sefinek <contact@sefinek.net> (https://sefinek.net)",
