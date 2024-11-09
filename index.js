@@ -21,7 +21,7 @@ const fetchBlockedIPs = async () => {
 			log('log', `Fetched ${events.length} events from Cloudflare`);
 			return events;
 		} else {
-			log('error', `Failed to retrieve data from Cloudflare. Status: ${status}`, data?.errors);
+			log('error', `Failed to retrieve data from Cloudflare (status ${status}); ${JSON.stringify(data?.errors)}`);
 			return null;
 		}
 	} catch (err) {
