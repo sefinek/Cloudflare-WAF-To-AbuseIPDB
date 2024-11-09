@@ -1,6 +1,6 @@
 module.exports = {
 	apps: [{
-		name: 'waf',
+		name: 'wta',
 		script: './index.js',
 
 		// Configuration options
