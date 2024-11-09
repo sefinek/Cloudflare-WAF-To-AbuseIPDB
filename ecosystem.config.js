@@ -3,14 +3,6 @@ module.exports = {
 		name: 'wta',
 		script: './index.js',
 
-		// Configuration options
-		exec_mode: 'fork',
-		max_memory_restart: '500M',
-
-		// Monitoring changes in files and restarting the application
-		watch: false,
-		ignore_watch: ['.git', 'node_modules', 'logs', 'eslint.config.mjs', 'ecosystem.config.js'],
-
 		// Logging settings
 		log_date_format: 'HH:mm:ss.SSS DD.MM.YYYY',
 		merge_logs: true,
