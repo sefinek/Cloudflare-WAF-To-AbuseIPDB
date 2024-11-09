@@ -14,9 +14,9 @@ module.exports = {
 		// Logging settings
 		log_date_format: 'HH:mm:ss.SSS DD.MM.YYYY',
 		merge_logs: true,
-		log_file: '/home/sefinek/logs/other/waf-abuseipdb/combined.log',
-		out_file: '/home/sefinek/logs/other/waf-abuseipdb/out.log',
-		error_file: '/home/sefinek/logs/other/waf-abuseipdb/error.log',
+		log_file: '/home/sefinek/logs/other/waf-to-abuseipdb/combined.log',
+		out_file: '/home/sefinek/logs/other/waf-to-abuseipdb/out.log',
+		error_file: '/home/sefinek/logs/other/waf-to-abuseipdb/error.log',
 
 		// Application restart policy
 		wait_ready: true,
