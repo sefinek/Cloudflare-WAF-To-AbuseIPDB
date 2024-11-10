@@ -2,6 +2,7 @@ const { axios } = require('./axios.js');
 const { readReportedIPs, updateSefinekAPIInCSV } = require('./csv.js');
 const log = require('../scripts/log.js');
 const clientIp = require('./clientIp.js');
+const whitelist = require('../scripts/whitelist.js');
 
 const API_URL = `${process.env.SEFINEK_API_URL}/cloudflare-waf-abuseipdb/post`;
 
@@ -9,11 +10,10 @@ module.exports = async () => {
 	const reportedIPs = readReportedIPs().filter(x =>
 		x.status === 'REPORTED' &&
 		x.ip !== clientIp.getAddress() &&
-		!x.endpoint.includes('/api') && // API requests
-		!['//video', '//js', '//images', '//imgs', 'favicon.ico'].some(endpoint => x.endpoint.includes(endpoint)) && // Endpoints
-		['api.', 'cdn.'].some(prefix => x.hostname.startsWith(prefix)) && // Domains
 		x.hostname !== 'blocklist.sefinek.net' && // Domain
-		!['Chrome/129', 'Chrome/130', 'Chrome/131', 'Chrome/132', 'Chrome/133', 'StellaLauncher'].some(agent => x.useragent.includes(agent)) && // User-agents
+		!whitelist.subdomains.some(subdomain => x.clientRequestHTTPHost.includes(subdomain)) && // Subdomains
+		!whitelist.useragents.some(ua => x.userAgent.includes(ua)) && // User-agents
+		!whitelist.endpoints.some(endpoint => x.clientRequestPath.includes(endpoint)) && // Endpoints
 		!(/crawler|spider|bot/gi).test(x.useragent) && // Bots
 		!x.sefinekAPI
 	);
@@ -39,9 +39,7 @@ module.exports = async () => {
 				country: ip.country,
 				timestamp: ip.timestamp,
 			})),
-		}, {
-			headers: { 'Authorization': process.env.SEFINEK_API_SECRET },
-		});
+		}, { headers: { 'Authorization': process.env.SEFINEK_API_SECRET } });
 
 		log('log', `Successfully sent ${uniqueLogs.length} logs to Sefinek API. Status: ${res.status}`);
 

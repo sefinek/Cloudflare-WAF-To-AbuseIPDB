@@ -10,7 +10,7 @@ const headers = require('./scripts/headers.js');
 const { logToCSV, readReportedIPs, wasImageRequestLogged } = require('./services/csv.js');
 const formatDelay = require('./scripts/formatDelay.js');
 const clientIp = require('./services/clientIp.js');
-const whitelist = require('./whitelist.js');
+const whitelist = require('./scripts/whitelist.js');
 const log = require('./scripts/log.js');
 
 const fetchBlockedIPs = async () => {
@@ -18,8 +18,15 @@ const fetchBlockedIPs = async () => {
 		const { data, status } = await axios.post('https://api.cloudflare.com/client/v4/graphql', PAYLOAD(), { headers: headers.CLOUDFLARE });
 		const events = data?.data?.viewer?.zones[0]?.firewallEventsAdaptive;
 		if (events) {
-			log('log', `Fetched ${events.length} events from Cloudflare`);
-			return events;
+			const filtered = events.filter(x =>
+				x.ip !== clientIp.getAddress() &&
+				!whitelist.subdomains.some(subdomain => x.clientRequestHTTPHost.includes(subdomain)) && // Subdomains
+				!whitelist.useragents.some(ua => x.userAgent.includes(ua)) && // User-agents
+				!whitelist.endpoints.some(endpoint => x.clientRequestPath.includes(endpoint))// Endpoints
+			);
+
+			log('log', `Fetched ${events.length} (filtered ${filtered.length}) events from Cloudflare`);
+			return filtered;
 		} else {
 			throw new Error(`Failed to retrieve data from Cloudflare (status ${status}); ${JSON.stringify(data?.errors)}`);
 		}
@@ -131,7 +138,7 @@ const reportIP = async (event, uri, country, hostname, endpoint, cycleErrorCount
 				continue;
 			}
 
-			if (whitelist.includes(event.clientRequestPath)) return log('log', `Skipping ${event.clientRequestPath}...`);
+			if (whitelist.endpoints.includes(event.clientRequestPath)) return log('log', `Skipping ${event.clientRequestPath}...`);
 
 			const reportedIPs = readReportedIPs();
 			const { recentlyReported, timeDifference, reason } = isIPReportedRecently(event.rayName, ip, reportedIPs);
