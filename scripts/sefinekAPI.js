@@ -1,5 +1,5 @@
 const { axios } = require('../services/axios.js');
-const { readReportedIPs, updateSefinekAPIInCSV } = require('./csv.js');
+const { readReportedIPs, updateSefinekAPIInCSV } = require('../services/csv.js');
 const log = require('./log.js');
 const clientIp = require('./clientIp.js');
 
