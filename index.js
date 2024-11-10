@@ -37,10 +37,14 @@ const fetchBlockedIPs = async () => {
 };
 
 const isIPReportedRecently = (rayId, ip, reportedIPs) => {
-	const lastReport = reportedIPs.find(entry =>
-		(entry.rayId === rayId || entry.ip === ip) &&
-		(entry.status === 'TOO_MANY_REQUESTS' || entry.status === 'REPORTED')
-	);
+	const lastReport = reportedIPs.reduce((latest, entry) => {
+		if (
+			(entry.rayId === rayId || entry.ip === ip) &&
+			(entry.status === 'TOO_MANY_REQUESTS' || entry.status === 'REPORTED') &&
+			(!latest || entry.timestamp > latest.timestamp)
+		) return entry;
+		return latest;
+	}, null);
 
 	if (lastReport && (Date.now() - lastReport.timestamp) < REPORTED_IP_COOLDOWN_MS) {
 		return { recentlyReported: true, timeDifference: Date.now() - lastReport.timestamp, reason: lastReport.status === 'TOO_MANY_REQUESTS' ? 'RATE-LIMITED' : 'REPORTED' };
