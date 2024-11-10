@@ -14,4 +14,4 @@ const ABUSEIPDB = {
 	'Key': process.env.ABUSEIPDB_API_KEY,
 };
 
-module.exports = { CLOUDFLARE, ABUSEIPDB };
+module.exports = { UserAgent, CLOUDFLARE, ABUSEIPDB };
