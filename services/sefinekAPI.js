@@ -35,7 +35,7 @@ module.exports = async () => {
 				rayId: ip.rayId,
 				ip: ip.ip,
 				endpoint: ip.endpoint,
-				userAgent: ip.userAgent || '',
+				userAgent: ip.userAgent,
 				action: ip.action,
 				country: ip.country,
 				timestamp: ip.timestamp,
