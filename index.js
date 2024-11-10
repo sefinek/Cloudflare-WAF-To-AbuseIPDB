@@ -2,14 +2,14 @@ require('dotenv').config();
 
 const { axios, moduleVersion } = require('./services/axios.js');
 const { CYCLE_INTERVAL, REPORTED_IP_COOLDOWN_MS, MAX_URL_LENGTH, SUCCESS_COOLDOWN, SEFINEK_API_INTERVAL, REPORT_TO_SEFINEK_API } = require('./scripts/config.js');
-const PAYLOAD = require('./scripts/payload.js');
+const PAYLOAD = require('./services/payload.js');
 const generateComment = require('./scripts/generateComment.js');
-const SefinekAPI = require('./scripts/sefinekAPI.js');
+const SefinekAPI = require('./services/sefinekAPI.js');
 const isImageRequest = require('./scripts/isImageRequest.js');
 const headers = require('./scripts/headers.js');
 const { logToCSV, readReportedIPs, wasImageRequestLogged } = require('./services/csv.js');
 const formatDelay = require('./scripts/formatDelay.js');
-const clientIp = require('./scripts/clientIp.js');
+const clientIp = require('./services/clientIp.js');
 const whitelist = require('./whitelist.js');
 const log = require('./scripts/log.js');
 

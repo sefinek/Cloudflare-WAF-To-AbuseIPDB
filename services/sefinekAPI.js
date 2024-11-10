@@ -1,6 +1,6 @@
-const { axios } = require('../services/axios.js');
-const { readReportedIPs, updateSefinekAPIInCSV } = require('../services/csv.js');
-const log = require('./log.js');
+const { axios } = require('./axios.js');
+const { readReportedIPs, updateSefinekAPIInCSV } = require('./csv.js');
+const log = require('../scripts/log.js');
 const clientIp = require('./clientIp.js');
 
 const API_URL = `${process.env.SEFINEK_API_URL}/cloudflare-waf-abuseipdb/post`;
