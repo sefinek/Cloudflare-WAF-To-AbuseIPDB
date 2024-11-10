@@ -1,7 +1,7 @@
 require('dotenv').config();
 
 const { axios, moduleVersion } = require('./services/axios.js');
-const { CYCLE_INTERVAL, REPORTED_IP_COOLDOWN_MS, MAX_URL_LENGTH, SUCCESS_COOLDOWN, SEFINEK_API_INTERVAL, REPORT_TO_SEFINEK_API } = require('./config.js');
+const { CYCLE_INTERVAL, REPORTED_IP_COOLDOWN_MS, MAX_URL_LENGTH, SUCCESS_COOLDOWN, SEFINEK_API_INTERVAL, REPORT_TO_SEFINEK_API } = require('./scripts/config.js');
 const PAYLOAD = require('./scripts/payload.js');
 const generateComment = require('./scripts/generateComment.js');
 const SefinekAPI = require('./scripts/sefinekAPI.js');

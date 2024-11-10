@@ -1,5 +1,5 @@
 const { axios } = require('../services/axios.js');
-const { IP_REFRESH_INTERVAL } = require('../config.js');
+const { IP_REFRESH_INTERVAL } = require('./config.js');
 const log = require('./log.js');
 
 let address = null; // Holds the IP address
