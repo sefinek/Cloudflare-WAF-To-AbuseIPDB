@@ -13,7 +13,7 @@ module.exports = async () => {
 		!['//video', '//js', '//images', '//imgs', 'favicon.ico'].some(endpoint => x.endpoint.includes(endpoint)) && // Endpoints
 		['api.', 'cdn.'].some(prefix => x.hostname.startsWith(prefix)) && // Domains
 		x.hostname !== 'blocklist.sefinek.net' && // Domain
-		!['Chrome/129', 'Chrome/130', 'Chrome/131', 'Chrome/132'].some(agent => x.useragent.includes(agent)) && // User-agents
+		!['Chrome/129', 'Chrome/130', 'Chrome/131', 'Chrome/132', 'Chrome/133', 'StellaLauncher'].some(agent => x.useragent.includes(agent)) && // User-agents
 		!(/crawler|spider|bot/gi).test(x.useragent) && // Bots
 		!x.sefinekAPI
 	);

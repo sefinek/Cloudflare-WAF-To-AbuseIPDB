@@ -21,30 +21,22 @@ const fetchBlockedIPs = async () => {
 			log('log', `Fetched ${events.length} events from Cloudflare`);
 			return events;
 		} else {
-			log('error', `Failed to retrieve data from Cloudflare (status ${status}); ${JSON.stringify(data?.errors)}`);
-			return null;
+			throw new Error(`Failed to retrieve data from Cloudflare (status ${status}); ${JSON.stringify(data?.errors)}`);
 		}
 	} catch (err) {
-		log('error', err.response?.data ? `${err.response.status} HTTP ERROR (Cloudflare API)\n${JSON.stringify(err.response.data, null, 2)}` : `Unknown error with Cloudflare API: ${err.message}`);
+		log('error', err.response?.data ? `${err.response.status} HTTP ERROR Cloudflare API: ${JSON.stringify(err.response.data, null, 2)}` : `Unknown error with Cloudflare API: ${err.message}`);
 		return null;
 	}
 };
 
 const isIPReportedRecently = (rayId, ip, reportedIPs) => {
-	const lastReport = reportedIPs.reduce((latest, entry) => {
-		if (
-			(entry.rayId === rayId || entry.ip === ip) &&
-			(entry.status === 'TOO_MANY_REQUESTS' || entry.status === 'REPORTED') &&
-			(!latest || entry.timestamp > latest.timestamp)
-		) return entry;
-		return latest;
-	}, null);
+	const lastReport = reportedIPs.find(entry =>
+		(entry.rayId === rayId || entry.ip === ip) &&
+		(entry.status === 'TOO_MANY_REQUESTS' || entry.status === 'REPORTED')
+	);
 
-	if (lastReport) {
-		const timeDifference = Date.now() - lastReport.timestamp;
-		if (timeDifference < REPORTED_IP_COOLDOWN_MS) {
-			return { recentlyReported: true, timeDifference, reason: lastReport.status === 'TOO_MANY_REQUESTS' ? 'RATE-LIMITED' : 'REPORTED' };
-		}
+	if (lastReport && (Date.now() - lastReport.timestamp) < REPORTED_IP_COOLDOWN_MS) {
+		return { recentlyReported: true, timeDifference: Date.now() - lastReport.timestamp, reason: lastReport.status === 'TOO_MANY_REQUESTS' ? 'RATE-LIMITED' : 'REPORTED' };
 	}
 
 	return { recentlyReported: false };
@@ -127,7 +119,7 @@ const reportIP = async (event, uri, country, hostname, endpoint, cycleErrorCount
 		if (!userIp) log('warn', `Your IP address is missing! Received: ${userIp}`);
 
 		let cycleImageSkippedCount = 0, cycleProcessedCount = 0, cycleReportedCount = 0, cycleSkippedCount = 0;
-		const cycleErrorCounts = { blocked: 0, noResponse: 0, otherErrors: 0 };
+		const cycleErrorCounts = { blocked: 0, otherErrors: 0 };
 		let imageRequestLogged = false;
 
 		for (const event of blockedIPEvents) {
@@ -176,7 +168,6 @@ const reportIP = async (event, uri, country, hostname, endpoint, cycleErrorCount
 		log('log', `- Skipped IPs: ${cycleSkippedCount}`);
 		log('log', `- Skipped due to Image Requests: ${cycleImageSkippedCount}`);
 		log('log', `- 429 Too Many Requests: ${cycleErrorCounts.blocked}`);
-		log('log', `- No response errors: ${cycleErrorCounts.noResponse}`);
 		log('log', `- Other errors: ${cycleErrorCounts.otherErrors}`);
 		log('log', '===================== End of Reporting Cycle =====================');
 

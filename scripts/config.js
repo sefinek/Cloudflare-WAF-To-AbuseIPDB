@@ -5,7 +5,7 @@ const REPORTED_IP_COOLDOWN_MS = parseInt(process.env.REPORTED_IP_COOLDOWN_MS || 
 
 const MAX_URL_LENGTH = parseInt(process.env.MAX_URL_LENGTH || '920');
 
-const SUCCESS_COOLDOWN = parseInt(process.env.SUCCESS_COOLDOWN || '1000');
+const SUCCESS_COOLDOWN = parseInt(process.env.SUCCESS_COOLDOWN || '200');
 
 const IP_REFRESH_INTERVAL = parseInt(process.env.IP_REFRESH_INTERVAL || '80') * 60 * 1000;
 
