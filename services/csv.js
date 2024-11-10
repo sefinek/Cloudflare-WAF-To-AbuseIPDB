@@ -21,9 +21,9 @@ const escapeCSVValue = value => {
 	return value || '';
 };
 
-const logToCSV = (rayId, ip, country = 'N/A', hostname, endpoint, useragent, actionTaken = 'N/A', status = 'N/A', sefinekAPI) => {
+const logToCSV = (rayId, ip, country = 'N/A', hostname, endpoint, userAgent, actionTaken = 'N/A', status = 'N/A', sefinekAPI) => {
 	checkCSVSize();
-	const logLine = `${new Date().toISOString()},${rayId},${ip},${country},${hostname},${escapeCSVValue(endpoint)},${escapeCSVValue(useragent)},${actionTaken.toUpperCase()},${status},${sefinekAPI || false}`;
+	const logLine = `${new Date().toISOString()},${rayId},${ip},${country},${hostname},${escapeCSVValue(endpoint)},${escapeCSVValue(userAgent)},${actionTaken.toUpperCase()},${status},${sefinekAPI || false}`;
 	fs.appendFileSync(CSV_FILE_PATH, logLine + '\n');
 };
 
@@ -46,7 +46,7 @@ const readReportedIPs = () => {
 				country: parts[3],
 				hostname: parts[4],
 				endpoint: parts[5],
-				useragent: parts[6].replace(/(^"|"$)/g, ''),
+				userAgent: parts[6].replace(/(^"|"$)/g, ''),
 				action: parts[7],
 				status: parts[8],
 				sefinekAPI: parts[9] === 'true',
