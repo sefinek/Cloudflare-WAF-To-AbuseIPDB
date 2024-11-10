@@ -1,5 +1,5 @@
 const subdomains = ['api.', 'cdn.'];
-const useragents = ['Chrome/129', 'Chrome/130', 'Chrome/131', 'Chrome/132', 'Chrome/133', 'StellaLauncher'];
-const endpoints = ['/api/', '//video', '//js', '//images', '//imgs', 'favicon.ico'];
+const userAgents = ['Chrome/129', 'Chrome/130', 'Chrome/131', 'Chrome/132', 'StellaLauncher', 'PrepareStella'];
+const endpoints = ['/api/', '//video', '//js', '//images', '//imgs', 'favicon.ico', 'sitemap.xml', 'robots.txt'];
 
-module.exports = { subdomains, useragents, endpoints };
+module.exports = { subdomains, userAgents, endpoints };

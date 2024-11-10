@@ -20,9 +20,9 @@ const fetchBlockedIPs = async () => {
 		if (events) {
 			const filtered = events.filter(x =>
 				x.ip !== clientIp.getAddress() &&
-				!whitelist.subdomains.some(subdomain => x.clientRequestHTTPHost.includes(subdomain)) && // Subdomains
-				!whitelist.useragents.some(ua => x.userAgent.includes(ua)) && // User-agents
-				!whitelist.endpoints.some(endpoint => x.clientRequestPath.includes(endpoint))// Endpoints
+				!whitelist.subdomains.some(subdomain => x.clientRequestHTTPHost?.includes(subdomain)) && // Subdomains
+				!whitelist.userAgents.some(ua => x.userAgent?.includes(ua)) && // User-agents
+				!whitelist.endpoints.some(endpoint => x.clientRequestPath?.includes(endpoint)) // Endpoints
 			);
 
 			log('log', `Fetched ${events.length} (filtered ${filtered.length}) events from Cloudflare`);
@@ -173,8 +173,8 @@ const reportIP = async (event, uri, country, hostname, endpoint, cycleErrorCount
 		log('log', `- Reported IPs: ${cycleReportedCount}`);
 		log('log', `- Total IPs processed: ${cycleProcessedCount}`);
 		log('log', `- Skipped IPs: ${cycleSkippedCount}`);
-		log('log', `- Skipped due to Image Requests: ${cycleImageSkippedCount}`);
-		log('log', `- 429 Too Many Requests: ${cycleErrorCounts.blocked}`);
+		log('log', `- Skipped due to image requests: ${cycleImageSkippedCount}`);
+		log('log', `- Rate-limits: ${cycleErrorCounts.blocked}`);
 		log('log', `- Other errors: ${cycleErrorCounts.otherErrors}`);
 		log('log', '===================== End of Reporting Cycle =====================');
 
