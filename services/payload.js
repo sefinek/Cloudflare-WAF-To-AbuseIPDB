@@ -3,7 +3,7 @@ const query = `query ListFirewallEvents($zoneTag: string, $filter: FirewallEvent
     zones(filter: { zoneTag: $zoneTag }) {
       firewallEventsAdaptive(
         filter: $filter,
-        limit: 1500,
+        limit: 1000,
         orderBy: [datetime_DESC]
       ) {
         action

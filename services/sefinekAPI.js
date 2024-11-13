@@ -10,12 +10,17 @@ module.exports = async () => {
 	const reportedIPs = (readReportedIPs() || []).filter(x =>
 		x.status === 'REPORTED' &&
 		x.ip !== clientIp.getAddress() &&
-		x.hostname !== 'blocklist.sefinek.net' && // Domain
-		!whitelist.subdomains.some(subdomain => x.clientRequestHTTPHost?.includes(subdomain)) && // Subdomains
-		!whitelist.userAgents.some(ua => x.userAgent?.includes(ua)) && // User-agents
-		!whitelist.endpoints.some(endpoint => x.clientRequestPath?.includes(endpoint)) && // Endpoints
-		!(/crawler|spider|bot/gi).test(x.userAgent) &&
-		!x.sefinekAPI
+		!x.sefinekAPI &&
+		(
+			x.source === 'securitylevel' ||
+			x.source === 'badscore' ||
+			(
+				!(/crawler|spider|bot/gi).test(x.userAgent) &&
+				!whitelist.domains.some(subdomain => x.clientRequestHTTPHost?.includes(subdomain)) &&
+				!whitelist.userAgents.some(ua => x.userAgent?.includes(ua)) &&
+				!whitelist.endpoints.some(endpoint => x.clientRequestPath?.includes(endpoint))
+			)
+		)
 	);
 
 	if (!reportedIPs.length) return;

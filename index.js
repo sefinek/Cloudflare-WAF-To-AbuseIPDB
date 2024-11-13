@@ -1,7 +1,7 @@
 require('dotenv').config();
 
 const { axios, moduleVersion } = require('./services/axios.js');
-const { CYCLE_INTERVAL, REPORTED_IP_COOLDOWN_MS, MAX_URL_LENGTH, SUCCESS_COOLDOWN, SEFINEK_API_INTERVAL, REPORT_TO_SEFINEK_API } = require('./scripts/config.js');
+const { CYCLE_INTERVAL, REPORTED_IP_COOLDOWN, MAX_URL_LENGTH, SUCCESS_COOLDOWN, SEFINEK_API_INTERVAL, REPORT_TO_SEFINEK_API } = require('./scripts/config.js');
 const PAYLOAD = require('./services/payload.js');
 const generateComment = require('./scripts/generateComment.js');
 const SefinekAPI = require('./services/sefinekAPI.js');
@@ -20,9 +20,15 @@ const fetchBlockedIPs = async () => {
 		if (events) {
 			const filtered = events.filter(x =>
 				x.ip !== clientIp.getAddress() &&
-				!whitelist.subdomains.some(subdomain => x.clientRequestHTTPHost?.includes(subdomain)) && // Subdomains
-				!whitelist.userAgents.some(ua => x.userAgent?.includes(ua)) && // User-agents
-				!whitelist.endpoints.some(endpoint => x.clientRequestPath?.includes(endpoint)) // Endpoints
+				(
+					x.source === 'securitylevel' ||
+					x.source === 'badscore' ||
+					(
+						!whitelist.domains.some(subdomain => x.clientRequestHTTPHost?.includes(subdomain)) &&
+						!whitelist.userAgents.some(ua => x.userAgent?.includes(ua)) &&
+						!whitelist.endpoints.some(endpoint => x.clientRequestPath?.includes(endpoint))
+					)
+				)
 			);
 
 			log('log', `Fetched ${events.length} (filtered ${filtered.length}) events from Cloudflare`);
@@ -46,7 +52,7 @@ const isIPReportedRecently = (rayId, ip, reportedIPs) => {
 		return latest;
 	}, null);
 
-	if (lastReport && (Date.now() - lastReport.timestamp) < REPORTED_IP_COOLDOWN_MS) {
+	if (lastReport && (Date.now() - lastReport.timestamp) < REPORTED_IP_COOLDOWN) {
 		return { recentlyReported: true, timeDifference: Date.now() - lastReport.timestamp, reason: lastReport.status === 'TOO_MANY_REQUESTS' ? 'RATE-LIMITED' : 'REPORTED' };
 	}
 
@@ -118,7 +124,7 @@ const reportIP = async (event, uri, country, hostname, endpoint, cycleErrorCount
 	// AbuseIPDB
 	let cycleId = 1;
 	while (true) {
-		log('log', `================ New Reporting Cycle v${moduleVersion}; ID: ${cycleId} ================`);
+		log('log', `===================== Reporting Cycle No. ${cycleId} =====================`);
 
 		const blockedIPEvents = await fetchBlockedIPs();
 		if (!blockedIPEvents) {
@@ -145,13 +151,15 @@ const reportIP = async (event, uri, country, hostname, endpoint, cycleErrorCount
 			if (whitelist.endpoints.includes(event.clientRequestPath)) return log('log', `Skipping ${event.clientRequestPath}...`);
 
 			const reportedIPs = readReportedIPs();
-			const { recentlyReported, timeDifference, reason } = isIPReportedRecently(event.rayName, ip, reportedIPs);
+			const { recentlyReported } = isIPReportedRecently(event.rayName, ip, reportedIPs);
 			if (recentlyReported) {
-				const hoursAgo = Math.floor(timeDifference / (1000 * 60 * 60));
-				const minutesAgo = Math.floor((timeDifference % (1000 * 60 * 60)) / (1000 * 60));
-				const secondsAgo = Math.floor((timeDifference % (1000 * 60)) / 1000);
+				// if (process.env.NODE_ENV === 'development') {
+				// 	const hoursAgo = Math.floor(timeDifference / (1000 * 60 * 60));
+				// 	const minutesAgo = Math.floor((timeDifference % (1000 * 60 * 60)) / (1000 * 60));
+				// 	const secondsAgo = Math.floor((timeDifference % (1000 * 60)) / 1000);
+				// 	log('log', `${ip} was ${reason} ${hoursAgo}h ${minutesAgo}m ${secondsAgo}s ago. Skipping...`);
+				// }
 
-				if (process.env.NODE_ENV === 'development') log('log', `${ip} was ${reason} ${hoursAgo}h ${minutesAgo}m ${secondsAgo}s ago. Skipping...`);
 				cycleSkippedCount++;
 				continue;
 			}
@@ -177,7 +185,7 @@ const reportIP = async (event, uri, country, hostname, endpoint, cycleErrorCount
 		log('log', `- Reported IPs: ${cycleReportedCount}`);
 		log('log', `- Total IPs processed: ${cycleProcessedCount}`);
 		log('log', `- Skipped IPs: ${cycleSkippedCount}`);
-		log('log', `- Skipped due to image requests: ${cycleImageSkippedCount}`);
+		log('log', `- Ignored image requests: ${cycleImageSkippedCount}`);
 		log('log', `- Rate-limits: ${cycleErrorCounts.blocked}`);
 		log('log', `- Other errors: ${cycleErrorCounts.otherErrors}`);
 		log('log', '===================== End of Reporting Cycle =====================');

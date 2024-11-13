@@ -8,9 +8,8 @@ Also, take a look at [sefinek/UFW-AbuseIPDB-Reporter](https://github.com/sefinek
 > If you like this repository or find it useful, I would greatly appreciate it if you could give it a star ⭐. Thanks a lot!
 
 ## 🛠️ Prerequisites
-- [Node.js](https://nodejs.org)
-- [npm](https://www.npmjs.com) (Node Package Manager)
-- [PM2](https://www.npmjs.com/package/pm2) (optional)
+- [Node.js + npm](https://nodejs.org)
+- [PM2](https://www.npmjs.com/package/pm2) (recommended)
 
 
 ## 📃 Information
