@@ -1,7 +1,7 @@
 {
-  "name": "waf-to-abuseipdb",
+  "name": "cf-waf-to-abuseipdb",
   "version": "1.2.1",
-  "description": "A Node.js project that automates the reporting of incidents detected by Cloudflare WAF to the AbuseIPDB database.",
+  "description": "A Node.js project designed to automate the reporting of incidents detected by Cloudflare WAF to the AbuseIPDB.",
   "keywords": [
     "abuseipdb",
     "cloudflare",
@@ -31,7 +31,7 @@
     "dotenv": "^16.4.5"
   },
   "devDependencies": {
-    "@eslint/js": "^9.14.0",
+    "@eslint/js": "^9.15.0",
     "globals": "^15.12.0"
   }
 }

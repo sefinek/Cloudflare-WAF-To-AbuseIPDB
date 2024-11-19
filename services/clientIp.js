@@ -13,7 +13,7 @@ const fetchIPAddress = async () => {
 			log('error', 'Failed to retrieve your IP');
 		}
 	} catch (err) {
-		log('error', `Error fetching your IP: ${err.stack}`);
+		log('error', 'Error fetching your IP:', err.stack);
 	}
 };
 
