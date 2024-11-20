@@ -1,4 +1,4 @@
-module.exports = ({ action, clientAsn, clientASNDescription, clientRequestHTTPProtocol, clientRequestHTTPMethodName, clientRequestHTTPHost, clientRequestPath, clientRequestQuery, datetime, rayName, ruleId, userAgent = 'Empty string', source, clientCountryName }) => {
+module.exports = ({ action, clientAsn, clientASNDescription, clientRequestHTTPProtocol, clientRequestHTTPMethodName, clientRequestHTTPHost, clientRequestPath, clientRequestQuery, datetime, rayName, ruleId, userAgent, source, clientCountryName }) => {
 	const fields = [
 		{ label: 'Action taken', value: action?.toUpperCase() },
 		{ label: 'ASN', value: `${clientAsn} (${clientASNDescription})` },
@@ -9,7 +9,7 @@ module.exports = ({ action, clientAsn, clientASNDescription, clientRequestHTTPPr
 		{ label: 'Timestamp', value: datetime },
 		{ label: 'Ray ID', value: rayName },
 		// { label: 'Rule ID', value: ruleId },
-		{ label: 'UA', value: userAgent },
+		{ label: 'UA', value: userAgent || 'Empty string' },
 	];
 
 	const reportLines = fields
