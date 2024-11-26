@@ -1,7 +1,7 @@
 {
   "name": "cf-waf-to-abuseipdb",
-  "version": "1.2.1",
-  "description": "A Node.js project designed to automate the reporting of incidents detected by Cloudflare WAF to the AbuseIPDB.",
+  "version": "1.2.2",
+  "description": "Node.js script for automatically reporting incidents to AbuseIPDB using data obtained from Cloudflare WAF.",
   "keywords": [
     "abuseipdb",
     "cloudflare",
@@ -27,7 +27,7 @@
     "up": "ncu -u && npm install && npm update && npm audit fix"
   },
   "dependencies": {
-    "axios": "^1.7.7",
+    "axios": "^1.7.8",
     "dotenv": "^16.4.5"
   },
   "devDependencies": {
