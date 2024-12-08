@@ -17,13 +17,12 @@ If you want to make changes to the script from this repository, please kindly [f
 
 
 ## 🌌 Example Report
-![Sample Cloudflare WAF Report to AbuseIPDB](images/brave_VBJdEQt0j5qb.png)
 ```
 Triggered Cloudflare WAF (securitylevel) from T1.
 Action taken: MANAGED_CHALLENGE
 ASN: 53667 (PONYNET)
 Protocol: HTTP/1.0 (method GET)
-Domain: blocklist.sefinek.net
+Zone: blocklist.sefinek.net
 Endpoint: /
 Timestamp: 2024-11-09T19:20:18Z
 Ray ID: 8e0028cb79ab3a96
