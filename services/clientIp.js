@@ -10,10 +10,10 @@ const fetchIPAddress = async () => {
 		if (data?.success) {
 			address = data.message;
 		} else {
-			log('error', 'Failed to retrieve your IP');
+			log(2, 'Failed to retrieve your IP');
 		}
 	} catch (err) {
-		log('error', 'Error fetching your IP:', err.stack);
+		log(2, 'Error fetching your IP:', err.stack);
 	}
 };
 

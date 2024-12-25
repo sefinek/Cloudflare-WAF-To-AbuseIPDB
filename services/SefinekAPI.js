@@ -32,7 +32,7 @@ module.exports = async () => {
 		return true;
 	});
 
-	if (!uniqueLogs.length) return log('log', 'No unique IPs to send to Sefinek API');
+	if (!uniqueLogs.length) return log(0, 'No unique IPs to send to Sefinek API');
 
 	try {
 		const res = await axios.post(API_URL, {
@@ -47,10 +47,10 @@ module.exports = async () => {
 			})),
 		}, { headers: { 'Authorization': process.env.SEFINEK_API_SECRET } });
 
-		log('log', `Successfully sent ${uniqueLogs.length} logs to Sefinek API. Status: ${res.status}`);
+		log(0, `Successfully sent ${uniqueLogs.length} logs to Sefinek API. Status: ${res.status}`);
 
 		uniqueLogs.forEach(ip => updateSefinekAPIInCSV(ip.rayId, true));
 	} catch (err) {
-		log('error', `Failed to send logs to Sefinek API. Status: ${err.response?.status}. Message: ${err.response?.data?.message || err.stack}`);
+		log(2, `Failed to send logs to Sefinek API. Status: ${err.response?.status}. Message: ${err.response?.data?.message || err.stack}`);
 	}
 };

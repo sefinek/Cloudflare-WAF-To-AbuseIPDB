@@ -31,13 +31,13 @@ const fetchBlockedIPs = async () => {
 				)
 			);
 
-			log('log', `Fetched ${events.length} (filtered ${filtered.length}) events from Cloudflare`);
+			log(0, `Fetched ${events.length} (filtered ${filtered.length}) events from Cloudflare`);
 			return filtered;
 		} else {
 			throw new Error(`Failed to retrieve data from Cloudflare (status ${status}); ${JSON.stringify(data?.errors)}`);
 		}
 	} catch (err) {
-		log('error', err.response?.data ? `${err.response.status} HTTP ERROR Cloudflare API: ${JSON.stringify(err.response.data, null, 2)}` : `Unknown error with Cloudflare API: ${err.message}`);
+		log(2, err.response?.data ? `${err.response.status} HTTP ERROR Cloudflare API: ${JSON.stringify(err.response.data, null, 2)}` : `Unknown error with Cloudflare API: ${err.message}`);
 		return null;
 	}
 };
@@ -62,19 +62,19 @@ const isIPReportedRecently = (rayId, ip, reportedIPs) => {
 const reportIP = async (event, uri, country, hostname, endpoint, cycleErrorCounts) => {
 	if (!uri) {
 		logToCSV(event.rayName, event.clientIP, country, hostname, endpoint, event.userAgent, event.action, 'MISSING_URI');
-		log('warn', `Missing URL ${event.clientIP}; URI: ${uri}`);
+		log(1, `Missing URL ${event.clientIP}; URI: ${uri}`);
 		return false;
 	}
 
 	if (event.clientIP === clientIp.address) {
 		logToCSV(event.rayName, event.clientIP, country, hostname, endpoint, event.userAgent, event.action, 'YOUR_IP_ADDRESS');
-		log('log', `Your IP address (${event.clientIP}) was unexpectedly received from Cloudflare. URI: ${uri}`);
+		log(0, `Your IP address (${event.clientIP}) was unexpectedly received from Cloudflare. URI: ${uri}`);
 		return false;
 	}
 
 	if (uri.length > MAX_URL_LENGTH) {
 		logToCSV(event.rayName, event.clientIP, country, hostname, endpoint, event.userAgent, event.action, 'URI_TOO_LONG');
-		// log('log', `URI too long ${event.clientIP}; Received: ${uri}`);
+		// log(0, `URI too long ${event.clientIP}; Received: ${uri}`);
 		return false;
 	}
 
@@ -86,16 +86,16 @@ const reportIP = async (event, uri, country, hostname, endpoint, cycleErrorCount
 		}, { headers: headers.ABUSEIPDB });
 
 		logToCSV(event.rayName, event.clientIP, country, hostname, endpoint, event.userAgent, event.action, 'REPORTED');
-		log('log', `Reported ${event.clientIP}; URI: ${uri}`);
+		log(0, `Reported ${event.clientIP}; URI: ${uri}`);
 
 		return true;
 	} catch (err) {
 		if (err.response?.status === 429) {
 			logToCSV(event.rayName, event.clientIP, country, hostname, endpoint, event.userAgent, event.action, 'TOO_MANY_REQUESTS');
-			log('log', `429 for ${event.clientIP} (${event.rayName}); Endpoint: ${endpoint}`);
+			log(0, `429 for ${event.clientIP} (${event.rayName}); Endpoint: ${endpoint}`);
 			cycleErrorCounts.blocked++;
 		} else {
-			log('error', `Error ${err.response?.status} while reporting ${event.clientIP}; URI: ${uri}; (${err.response?.data})`);
+			log(2, `Error ${err.response?.status} while reporting ${event.clientIP}; URI: ${uri}; (${err.response?.data})`);
 			cycleErrorCounts.otherErrors++;
 		}
 
@@ -104,7 +104,7 @@ const reportIP = async (event, uri, country, hostname, endpoint, cycleErrorCount
 };
 
 (async () => {
-	log('log', 'Loading data, please wait...');
+	log(0, 'Loading data, please wait...');
 	await clientIp.fetchIPAddress();
 
 	// Sefinek API
@@ -117,23 +117,23 @@ const reportIP = async (event, uri, country, hostname, endpoint, cycleErrorCount
 		try {
 			process.send('ready');
 		} catch (err) {
-			log('log', `Failed to send ready signal to parent process. ${err.message}`);
+			log(0, `Failed to send ready signal to parent process. ${err.message}`);
 		}
 	}
 
 	// AbuseIPDB
 	let cycleId = 1;
 	while (true) {
-		log('log', `===================== Reporting Cycle No. ${cycleId} =====================`);
+		log(0, `===================== Reporting Cycle No. ${cycleId} =====================`);
 
 		const blockedIPEvents = await fetchBlockedIPs();
 		if (!blockedIPEvents) {
-			log('warn', 'No events fetched, skipping cycle...');
+			log(1, 'No events fetched, skipping cycle...');
 			continue;
 		}
 
 		const userIp = clientIp.getAddress();
-		if (!userIp) log('warn', `Your IP address is missing! Received: ${userIp}`);
+		if (!userIp) log(1, `Your IP address is missing! Received: ${userIp}`);
 
 		let cycleImageSkippedCount = 0, cycleProcessedCount = 0, cycleReportedCount = 0, cycleSkippedCount = 0;
 		const cycleErrorCounts = { blocked: 0, otherErrors: 0 };
@@ -143,12 +143,12 @@ const reportIP = async (event, uri, country, hostname, endpoint, cycleErrorCount
 			cycleProcessedCount++;
 			const ip = event.clientIP;
 			if (ip === userIp) {
-				log('log', `The IP address ${ip} belongs to this machine. Ignoring...`);
+				log(0, `The IP address ${ip} belongs to this machine. Ignoring...`);
 				cycleSkippedCount++;
 				continue;
 			}
 
-			if (whitelist.endpoints.includes(event.clientRequestPath)) return log('log', `Skipping ${event.clientRequestPath}...`);
+			if (whitelist.endpoints.includes(event.clientRequestPath)) return log(0, `Skipping ${event.clientRequestPath}...`);
 
 			const reportedIPs = readReportedIPs();
 			const { recentlyReported } = isIPReportedRecently(event.rayName, ip, reportedIPs);
@@ -157,7 +157,7 @@ const reportIP = async (event, uri, country, hostname, endpoint, cycleErrorCount
 				// 	const hoursAgo = Math.floor(timeDifference / (1000 * 60 * 60));
 				// 	const minutesAgo = Math.floor((timeDifference % (1000 * 60 * 60)) / (1000 * 60));
 				// 	const secondsAgo = Math.floor((timeDifference % (1000 * 60)) / 1000);
-				// 	log('log', `${ip} was ${reason} ${hoursAgo}h ${minutesAgo}m ${secondsAgo}s ago. Skipping...`);
+				// 	log(0, `${ip} was ${reason} ${hoursAgo}h ${minutesAgo}m ${secondsAgo}s ago. Skipping...`);
 				// }
 
 				cycleSkippedCount++;
@@ -168,7 +168,7 @@ const reportIP = async (event, uri, country, hostname, endpoint, cycleErrorCount
 				cycleImageSkippedCount++;
 				if (!wasImageRequestLogged(ip, reportedIPs)) {
 					if (imageRequestLogged) continue;
-					log('log', 'Skipping image requests in this cycle...');
+					log(0, 'Skipping image requests in this cycle...');
 					imageRequestLogged = true;
 				}
 
@@ -182,15 +182,15 @@ const reportIP = async (event, uri, country, hostname, endpoint, cycleErrorCount
 			}
 		}
 
-		log('log', `- Reported IPs: ${cycleReportedCount}`);
-		log('log', `- Total IPs processed: ${cycleProcessedCount}`);
-		log('log', `- Skipped IPs: ${cycleSkippedCount}`);
-		log('log', `- Ignored image requests: ${cycleImageSkippedCount}`);
-		log('log', `- Rate-limits: ${cycleErrorCounts.blocked}`);
-		log('log', `- Other errors: ${cycleErrorCounts.otherErrors}`);
-		log('log', '===================== End of Reporting Cycle =====================');
+		log(0, `- Reported IPs: ${cycleReportedCount}`);
+		log(0, `- Total IPs processed: ${cycleProcessedCount}`);
+		log(0, `- Skipped IPs: ${cycleSkippedCount}`);
+		log(0, `- Ignored image requests: ${cycleImageSkippedCount}`);
+		log(0, `- Rate-limits: ${cycleErrorCounts.blocked}`);
+		log(0, `- Other errors: ${cycleErrorCounts.otherErrors}`);
+		log(0, '===================== End of Reporting Cycle =====================');
 
-		log('log', `Waiting ${formatDelay(CYCLE_INTERVAL)}...`);
+		log(0, `Waiting ${formatDelay(CYCLE_INTERVAL)}...`);
 		cycleId++;
 		await new Promise(resolve => setTimeout(resolve, CYCLE_INTERVAL));
 	}
