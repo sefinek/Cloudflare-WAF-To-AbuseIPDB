@@ -3,7 +3,7 @@ module.exports = ({ action, clientAsn, clientASNDescription, clientRequestHTTPPr
 		{ label: 'Action taken', value: action?.toUpperCase() },
 		{ label: 'ASN', value: `${clientAsn} (${clientASNDescription})` },
 		{ label: 'Protocol', value: `${clientRequestHTTPProtocol} (${clientRequestHTTPMethodName} method)` },
-		{ label: 'Zone', value: clientRequestHTTPHost },
+		// { label: 'Zone', value: clientRequestHTTPHost },
 		{ label: 'Endpoint', value: clientRequestPath },
 		{ label: 'Query', value: clientRequestQuery },
 		{ label: 'Timestamp', value: datetime },
