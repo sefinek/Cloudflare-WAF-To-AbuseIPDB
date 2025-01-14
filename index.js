@@ -95,7 +95,7 @@ const reportIP = async (event, uri, country, hostname, endpoint, cycleErrorCount
 			log(0, `429 for ${event.clientIP} (${event.rayName}); Endpoint: ${endpoint}`);
 			cycleErrorCounts.blocked++;
 		} else {
-			log(2, `Error ${err.response?.status} while reporting ${event.clientIP}; URI: ${uri}; (${err.response?.data})`);
+			log(2, `Error ${err.response?.status} while reporting ${event.clientIP}; URI: ${uri}; (${err.response?.data || err.message})`);
 			cycleErrorCounts.otherErrors++;
 		}
 
