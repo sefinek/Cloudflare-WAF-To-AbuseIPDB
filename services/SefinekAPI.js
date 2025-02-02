@@ -37,7 +37,7 @@ module.exports = async () => {
 	} catch (err) {
 		if (!err.response?.data?.message?.includes('No valid or unique')) {
 			const msg = err.response?.data?.message[0] || err.response?.data?.message || err.message;
-			log(2, `Failed to send logs to Sefinek API! Status: ${err.response?.status ?? 'Unknown'}; Message: ${msg}`);
+			log(2, `Failed to send logs to Sefinek API! Status: ${err.response?.status ?? 'Unknown'}; Message: ${typeof msg === 'object' ? JSON.stringify(msg) : msg}`);
 		}
 	}
 };
