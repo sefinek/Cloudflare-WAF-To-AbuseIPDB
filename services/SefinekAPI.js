@@ -35,14 +35,9 @@ module.exports = async () => {
 
 		uniqueLogs.forEach(ip => updateSefinekAPIInCSV(ip.rayId, true));
 	} catch (err) {
-		const errMsg = Array.isArray(err?.response?.data?.message)
-			? err.response.data.message[0]
-			: (typeof err?.response?.data?.message === 'string'
-				? err.response.data.message
-				: err.message);
-
-		if (errMsg && !errMsg.includes('No valid or unique')) {
-			log(2, `Failed to send logs to Sefinek API! Status: ${err?.response?.status ?? 'Unknown'}; Message: ${errMsg}`);
+		if (!err.response?.data?.message?.includes('No valid or unique')) {
+			const msg = err.response?.data?.message[0] || err.response?.data?.message || err.message;
+			log(2, `Failed to send logs to Sefinek API! Status: ${err.response?.status ?? 'Unknown'}; Message: ${msg}`);
 		}
 	}
 };
