@@ -1,3 +1,5 @@
+const { MAIN } = require('../config.js').CONFIG;
+
 const query = `query ListFirewallEvents($zoneTag: string, $filter: FirewallEventsAdaptiveFilter_InputObject) {
   viewer {
     zones(filter: { zoneTag: $zoneTag }) {
@@ -28,7 +30,7 @@ const query = `query ListFirewallEvents($zoneTag: string, $filter: FirewallEvent
 
 module.exports = () => {
 	const variables = {
-		zoneTag: process.env.CLOUDFLARE_ZONE_ID,
+		zoneTag: MAIN.CLOUDFLARE_ZONE_ID,
 		filter: {
 			datetime_geq: new Date(Date.now() - (60 * 60 * 12 * 1000)).toISOString(),
 			// datetime_leq: new Date(Date.now() - (60 * 60 * 8 * 1000)).toISOString(),

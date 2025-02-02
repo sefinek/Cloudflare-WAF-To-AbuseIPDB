@@ -1,17 +1,14 @@
-require('dotenv').config();
-
-const { axios } = require('./services/axios.js');
-const { CYCLE_INTERVAL, REPORTED_IP_COOLDOWN, MAX_URL_LENGTH, SUCCESS_COOLDOWN, SEFINEK_API_INTERVAL, REPORT_TO_SEFINEK_API } = require('./scripts/config.js');
+const axios = require('./services/axios.js');
+const { CONFIG, GENERATE_COMMENT } = require('./config.js');
 const PAYLOAD = require('./services/payload.js');
-const generateComment = require('./scripts/generateComment.js');
 const SefinekAPI = require('./services/SefinekAPI.js');
-const isImageRequest = require('./scripts/isImageRequest.js');
-const headers = require('./scripts/headers.js');
+const isImageRequest = require('./utils/isImageRequest.js');
+const headers = require('./utils/headers.js');
 const { logToCSV, readReportedIPs, wasImageRequestLogged } = require('./services/csv.js');
-const formatDelay = require('./scripts/formatDelay.js');
-const clientIp = require('./services/clientIp.js');
-const whitelist = require('./scripts/whitelist.js');
-const log = require('./scripts/log.js');
+const formatDelay = require('./utils/formatDelay.js');
+const fetchServerIP = require('./services/fetchServerIP.js');
+const whitelist = require('./utils/whitelist.js');
+const log = require('./utils/log.js');
 
 const fetchBlockedIPs = async () => {
 	try {
@@ -19,7 +16,7 @@ const fetchBlockedIPs = async () => {
 		const events = data?.data?.viewer?.zones[0]?.firewallEventsAdaptive;
 		if (events) {
 			const filtered = events.filter(x =>
-				x.ip !== clientIp.getAddress() &&
+				x.ip !== fetchServerIP() &&
 				(
 					x.source === 'securitylevel' ||
 					x.source === 'badscore' ||
@@ -52,7 +49,7 @@ const isIPReportedRecently = (rayId, ip, reportedIPs) => {
 		return latest;
 	}, null);
 
-	if (lastReport && (Date.now() - lastReport.timestamp) < REPORTED_IP_COOLDOWN) {
+	if (lastReport && (Date.now() - lastReport.timestamp) < CONFIG.CYCLES.REPORTED_IP_COOLDOWN) {
 		return { recentlyReported: true, timeDifference: Date.now() - lastReport.timestamp, reason: lastReport.status === 'TOO_MANY_REQUESTS' ? 'RATE-LIMITED' : 'REPORTED' };
 	}
 
@@ -66,13 +63,13 @@ const reportIP = async (event, uri, country, hostname, endpoint, cycleErrorCount
 		return false;
 	}
 
-	if (event.clientIP === clientIp.address) {
+	if (event.clientIP === fetchServerIP()) {
 		logToCSV(event.rayName, event.clientIP, country, hostname, endpoint, event.userAgent, event.action, 'YOUR_IP_ADDRESS');
 		log(0, `Your IP address (${event.clientIP}) was unexpectedly received from Cloudflare. URI: ${uri}`);
 		return false;
 	}
 
-	if (uri.length > MAX_URL_LENGTH) {
+	if (uri.length > CONFIG.CYCLES.MAX_URL_LENGTH) {
 		logToCSV(event.rayName, event.clientIP, country, hostname, endpoint, event.userAgent, event.action, 'URI_TOO_LONG');
 		// log(0, `URI too long ${event.clientIP}; Received: ${uri}`);
 		return false;
@@ -82,7 +79,7 @@ const reportIP = async (event, uri, country, hostname, endpoint, cycleErrorCount
 		await axios.post('https://api.abuseipdb.com/api/v2/report', {
 			ip: event.clientIP,
 			categories: '19',
-			comment: generateComment(event),
+			comment: GENERATE_COMMENT(event),
 		}, { headers: headers.ABUSEIPDB });
 
 		logToCSV(event.rayName, event.clientIP, country, hostname, endpoint, event.userAgent, event.action, 'REPORTED');
@@ -105,15 +102,14 @@ const reportIP = async (event, uri, country, hostname, endpoint, cycleErrorCount
 
 (async () => {
 	log(0, 'Loading data, please wait...');
-	await clientIp.fetchIPAddress();
 
 	// Sefinek API
-	if (REPORT_TO_SEFINEK_API && SEFINEK_API_INTERVAL && process.env.SEFINEK_API_SECRET) {
-		setInterval(SefinekAPI, SEFINEK_API_INTERVAL);
+	if (CONFIG.SEFINEK_API.REPORT_TO_SEFIN_API && CONFIG.SEFINEK_API.INTERVAL && CONFIG.SEFINEK_API.SECRET_TOKEN) {
+		setInterval(SefinekAPI, CONFIG.SEFINEK_API.INTERVAL);
 	}
 
 	// Ready
-	if (process.env.NODE_ENV === 'production') {
+	if (CONFIG.MAIN.NODE_ENV === 'production') {
 		try {
 			process.send('ready');
 		} catch (err) {
@@ -132,7 +128,7 @@ const reportIP = async (event, uri, country, hostname, endpoint, cycleErrorCount
 			continue;
 		}
 
-		const userIp = clientIp.getAddress();
+		const userIp = fetchServerIP();
 		if (!userIp) log(1, `Your IP address is missing! Received: ${userIp}`);
 
 		let cycleImageSkippedCount = 0, cycleProcessedCount = 0, cycleReportedCount = 0, cycleSkippedCount = 0;
@@ -153,7 +149,7 @@ const reportIP = async (event, uri, country, hostname, endpoint, cycleErrorCount
 			const reportedIPs = readReportedIPs();
 			const { recentlyReported } = isIPReportedRecently(event.rayName, ip, reportedIPs);
 			if (recentlyReported) {
-				// if (process.env.NODE_ENV === 'development') {
+				// if (MAIN.NODE_ENV === 'development') {
 				// 	const hoursAgo = Math.floor(timeDifference / (1000 * 60 * 60));
 				// 	const minutesAgo = Math.floor((timeDifference % (1000 * 60 * 60)) / (1000 * 60));
 				// 	const secondsAgo = Math.floor((timeDifference % (1000 * 60)) / 1000);
@@ -178,7 +174,7 @@ const reportIP = async (event, uri, country, hostname, endpoint, cycleErrorCount
 			const wasReported = await reportIP(event, `${event.clientRequestHTTPHost}${event.clientRequestPath}`, event.clientCountryName, event.clientRequestHTTPHost, event.clientRequestPath, cycleErrorCounts);
 			if (wasReported) {
 				cycleReportedCount++;
-				await new Promise(resolve => setTimeout(resolve, SUCCESS_COOLDOWN));
+				await new Promise(resolve => setTimeout(resolve, CONFIG.CYCLES.SUCCESS_COOLDOWN));
 			}
 		}
 
@@ -190,8 +186,8 @@ const reportIP = async (event, uri, country, hostname, endpoint, cycleErrorCount
 		log(0, `- Other errors: ${cycleErrorCounts.otherErrors}`);
 		log(0, '===================== End of Reporting Cycle =====================');
 
-		log(0, `Waiting ${formatDelay(CYCLE_INTERVAL)}...`);
+		log(0, `Waiting ${formatDelay(CONFIG.CYCLES.CYCLE_INTERVAL)}...`);
 		cycleId++;
-		await new Promise(resolve => setTimeout(resolve, CYCLE_INTERVAL));
+		await new Promise(resolve => setTimeout(resolve, CONFIG.CYCLES.CYCLE_INTERVAL));
 	}
 })();

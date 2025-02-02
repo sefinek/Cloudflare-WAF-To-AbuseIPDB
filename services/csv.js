@@ -1,6 +1,6 @@
 const fs = require('node:fs');
 const path = require('node:path');
-const log = require('../scripts/log.js');
+const log = require('../utils/log.js');
 
 const CSV_FILE_PATH = path.join(__dirname, '..', 'reported_ips.csv');
 const MAX_CSV_SIZE_BYTES = 3 * 1024 * 1024; // 3 MB

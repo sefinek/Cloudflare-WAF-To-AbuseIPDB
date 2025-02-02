@@ -1,8 +1,13 @@
 const axios = require('axios');
-const { UserAgent } = require('../scripts/headers.js');
-const { version } = require('../package.json');
+const { UserAgent } = require('../utils/headers.js');
 
-axios.defaults.headers.common['User-Agent'] = UserAgent;
-axios.defaults.timeout = 25000;
+axios.defaults.headers.common = {
+	'User-Agent': UserAgent,
+	'Accept': 'application/json',
+	'Cache-Control': 'no-cache',
+	'Connection': 'keep-alive',
+};
 
-module.exports = { axios, moduleVersion: version };
+axios.defaults.timeout = 30000;
+
+module.exports = axios;

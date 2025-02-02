@@ -1,15 +1,14 @@
-const { axios } = require('./axios.js');
+const axios = require('./axios.js');
 const { readReportedIPs, updateSefinekAPIInCSV } = require('./csv.js');
-const log = require('../scripts/log.js');
-const clientIp = require('./clientIp.js');
-const whitelist = require('../scripts/whitelist.js');
-
-const API_URL = `${process.env.SEFINEK_API_URL}/cloudflare-waf-abuseipdb/post`;
+const log = require('../utils/log.js');
+const fetchServerIP = require('./fetchServerIP.js');
+const whitelist = require('../utils/whitelist.js');
+const { MAIN } = require('../config.js').CONFIG;
 
 module.exports = async () => {
 	const reportedIPs = (readReportedIPs() || []).filter(x =>
 		x.status === 'REPORTED' &&
-		x.ip !== clientIp.getAddress() &&
+		x.ip !== fetchServerIP() &&
 		!x.sefinekAPI &&
 		(
 			x.source === 'securitylevel' ||
@@ -35,7 +34,7 @@ module.exports = async () => {
 	if (!uniqueLogs.length) return log(0, 'No unique IPs to send to Sefinek API');
 
 	try {
-		const res = await axios.post(API_URL, {
+		const res = await axios.post('https://api.sefinek.net/api/v2/cloudflare-waf-abuseipdb/post', {
 			reportedIPs: uniqueLogs.map(ip => ({
 				rayId: ip.rayId,
 				ip: ip.ip,
@@ -45,7 +44,7 @@ module.exports = async () => {
 				country: ip.country,
 				timestamp: ip.timestamp,
 			})),
-		}, { headers: { 'Authorization': process.env.SEFINEK_API_SECRET } });
+		}, { headers: { 'Authorization': MAIN.SECRET_TOKEN } });
 
 		log(0, `Successfully sent ${uniqueLogs.length} logs to Sefinek API. Status: ${res.status}`);
 
