@@ -23,7 +23,7 @@ exports.CONFIG = {
 
 		// Interval for refreshing your IP address (in minutes).
 		// This ensures that WAF violations originating from your IP address are not reported to AbuseIPDB.
-		IP_REFRESH_INTERVAL: 80 * 60 * 1000,
+		IP_REFRESH_INTERVAL: 8 * 60 * 1000,
 	},
 
 	SEFINEK_API: {
