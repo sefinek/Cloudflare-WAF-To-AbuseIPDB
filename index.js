@@ -2,13 +2,13 @@ const axios = require('./services/axios.js');
 const { CONFIG, GENERATE_COMMENT } = require('./config.js');
 const PAYLOAD = require('./services/payload.js');
 const SefinekAPI = require('./services/SefinekAPI.js');
-const isImageRequest = require('./utils/isImageRequest.js');
 const headers = require('./utils/headers.js');
-const { logToCSV, readReportedIPs, wasImageRequestLogged } = require('./services/csv.js');
+const { logToCSV, readReportedIPs } = require('./services/csv.js');
 const formatDelay = require('./utils/formatDelay.js');
 const fetchServerIP = require('./services/fetchServerIP.js');
 const whitelist = require('./utils/whitelist.js');
 const log = require('./utils/log.js');
+const imgExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.svg', '.webp'];
 
 const fetchBlockedIPs = async () => {
 	try {
@@ -17,15 +17,9 @@ const fetchBlockedIPs = async () => {
 		if (events) {
 			const filtered = events.filter(x =>
 				x.ip !== fetchServerIP() &&
-				(
-					x.source === 'securitylevel' ||
-					x.source === 'badscore' ||
-					(
-						!whitelist.domains.some(subdomain => x.clientRequestHTTPHost?.includes(subdomain)) &&
-						!whitelist.userAgents.some(ua => x.userAgent?.includes(ua)) &&
-						!whitelist.endpoints.some(endpoint => x.clientRequestPath?.includes(endpoint))
-					)
-				)
+				!imgExtensions.some(ext => x.clientRequestPath.endsWith(ext)) &&
+				!whitelist.domains.some(subdomain => x.clientRequestHTTPHost?.includes(subdomain)) &&
+				!whitelist.endpoints.some(endpoint => x.clientRequestPath?.includes(endpoint))
 			);
 
 			log(0, `Fetched ${events.length} (filtered ${filtered.length}) events from Cloudflare`);
@@ -92,7 +86,7 @@ const reportIP = async (event, uri, country, hostname, endpoint, cycleErrorCount
 			log(0, `429 for ${event.clientIP} (${event.rayName}); Endpoint: ${endpoint}`);
 			cycleErrorCounts.blocked++;
 		} else {
-			log(2, `Error ${err.response?.status} while reporting ${event.clientIP}; URI: ${uri}; (${err.response?.data || err.message})`);
+			log(2, `Error ${err.response?.status} while reporting ${event.clientIP}; URI: ${uri}; ${err.response?.data?.errors[0]?.detail || JSON.stringify(err.response?.data) || err.message}`);
 			cycleErrorCounts.otherErrors++;
 		}
 
@@ -104,6 +98,8 @@ const reportIP = async (event, uri, country, hostname, endpoint, cycleErrorCount
 	log(0, 'Loading data, please wait...');
 
 	// Sefinek API
+	await SefinekAPI();
+	return;
 	if (CONFIG.SEFINEK_API.REPORT_TO_SEFIN_API && CONFIG.SEFINEK_API.INTERVAL && CONFIG.SEFINEK_API.SECRET_TOKEN) {
 		setInterval(SefinekAPI, CONFIG.SEFINEK_API.INTERVAL);
 	}
@@ -128,17 +124,16 @@ const reportIP = async (event, uri, country, hostname, endpoint, cycleErrorCount
 			continue;
 		}
 
-		const userIp = fetchServerIP();
-		if (!userIp) log(1, `Your IP address is missing! Received: ${userIp}`);
+		const serverIP = fetchServerIP();
+		if (!serverIP) log(1, `Server IP address is missing! Received: ${serverIP}`);
 
-		let cycleImageSkippedCount = 0, cycleProcessedCount = 0, cycleReportedCount = 0, cycleSkippedCount = 0;
+		let cycleProcessedCount = 0, cycleReportedCount = 0, cycleSkippedCount = 0;
 		const cycleErrorCounts = { blocked: 0, otherErrors: 0 };
-		let imageRequestLogged = false;
 
 		for (const event of blockedIPEvents) {
 			cycleProcessedCount++;
 			const ip = event.clientIP;
-			if (ip === userIp) {
+			if (ip === serverIP) {
 				log(0, `The IP address ${ip} belongs to this machine. Ignoring...`);
 				cycleSkippedCount++;
 				continue;
@@ -160,17 +155,6 @@ const reportIP = async (event, uri, country, hostname, endpoint, cycleErrorCount
 				continue;
 			}
 
-			if (isImageRequest(event.clientRequestPath)) {
-				cycleImageSkippedCount++;
-				if (!wasImageRequestLogged(ip, reportedIPs)) {
-					if (imageRequestLogged) continue;
-					log(0, 'Skipping image requests in this cycle...');
-					imageRequestLogged = true;
-				}
-
-				continue;
-			}
-
 			const wasReported = await reportIP(event, `${event.clientRequestHTTPHost}${event.clientRequestPath}`, event.clientCountryName, event.clientRequestHTTPHost, event.clientRequestPath, cycleErrorCounts);
 			if (wasReported) {
 				cycleReportedCount++;
@@ -181,7 +165,6 @@ const reportIP = async (event, uri, country, hostname, endpoint, cycleErrorCount
 		log(0, `- Reported IPs: ${cycleReportedCount}`);
 		log(0, `- Total IPs processed: ${cycleProcessedCount}`);
 		log(0, `- Skipped IPs: ${cycleSkippedCount}`);
-		log(0, `- Ignored image requests: ${cycleImageSkippedCount}`);
 		log(0, `- Rate-limits: ${cycleErrorCounts.blocked}`);
 		log(0, `- Other errors: ${cycleErrorCounts.otherErrors}`);
 		log(0, '===================== End of Reporting Cycle =====================');

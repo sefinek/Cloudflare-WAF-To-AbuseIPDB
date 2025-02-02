@@ -28,10 +28,10 @@ exports.CONFIG = {
 
 	SEFINEK_API: {
 		// Report IP addresses to api.sefinek.net to support the development of the repository at https://github.com/sefinek/Malicious-IP-Addresses. SECRET_TOKEN is required if true.
-		REPORT_TO_SEFIN_API: true,
+		REPORT_TO_SEFIN_API: false,
 
 		// Secret key for api.sefinek.net
-		SECRET_TOKEN: 'HKKAUZHTDAH7W87SyL6XsWkV8UeUFVA9VvvXhn6H9Wn6kfDW6ZsXCtbahmkaYcLbxZGyrAKPmSkXb3AJ6pCU3VuDyTjUSehMyDZ',
+		SECRET_TOKEN: '',
 
 		// How often should the log (reported_ips.csv) be analyzed and sent to the Sefinek API? In hours.
 		INTERVAL: 60 * 60 * 1000, // Frequency for analyzing and submitting logs to the Sefinek API

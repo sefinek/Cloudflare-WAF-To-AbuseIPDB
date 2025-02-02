@@ -76,6 +76,4 @@ const updateSefinekAPIInCSV = (rayId, reportedToSefinekAPI) => {
 	fs.writeFileSync(CSV_FILE_PATH, updatedLines.join('\n'));
 };
 
-const wasImageRequestLogged = (ip, reportedIPs) => reportedIPs.some(entry => entry.ip === ip && entry.action === 'SKIPPED_IMAGE_REQUEST');
-
-module.exports = { logToCSV, readReportedIPs, updateSefinekAPIInCSV, wasImageRequestLogged };
+module.exports = { logToCSV, readReportedIPs, updateSefinekAPIInCSV };
