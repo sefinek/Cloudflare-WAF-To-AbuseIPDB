@@ -98,8 +98,7 @@ const reportIP = async (event, uri, country, hostname, endpoint, cycleErrorCount
 	log(0, 'Loading data, please wait...');
 
 	// Sefinek API
-	await SefinekAPI();
-	return;
+	// await SefinekAPI();
 	if (CONFIG.SEFINEK_API.REPORT_TO_SEFIN_API && CONFIG.SEFINEK_API.INTERVAL && CONFIG.SEFINEK_API.SECRET_TOKEN) {
 		setInterval(SefinekAPI, CONFIG.SEFINEK_API.INTERVAL);
 	}
