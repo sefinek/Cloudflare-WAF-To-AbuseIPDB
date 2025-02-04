@@ -23,4 +23,6 @@ const endpoints = [
 	'crossdomain.xml',
 ];
 
-module.exports = { domains, endpoints };
+const imgExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.svg', '.webp'];
+
+module.exports = { domains, endpoints, imgExtensions };

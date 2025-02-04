@@ -8,7 +8,6 @@ const formatDelay = require('./utils/formatDelay.js');
 const fetchServerIP = require('./services/fetchServerIP.js');
 const whitelist = require('./utils/whitelist.js');
 const log = require('./utils/log.js');
-const imgExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.svg', '.webp'];
 
 const fetchBlockedIPs = async () => {
 	try {
@@ -17,7 +16,7 @@ const fetchBlockedIPs = async () => {
 		if (events) {
 			const filtered = events.filter(x =>
 				x.ip !== fetchServerIP() &&
-				!imgExtensions.some(ext => x.clientRequestPath.endsWith(ext)) &&
+				!whitelist.imgExtensions.some(ext => x.clientRequestPath.endsWith(ext)) &&
 				!whitelist.domains.some(subdomain => x.clientRequestHTTPHost?.includes(subdomain)) &&
 				!whitelist.endpoints.some(endpoint => x.clientRequestPath?.includes(endpoint))
 			);
