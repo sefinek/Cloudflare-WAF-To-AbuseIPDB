@@ -21,6 +21,7 @@ const endpoints = [
 	'manifest.json',
 	'apple-touch-icon.png',
 	'crossdomain.xml',
+	'site.webmanifest',
 ];
 
 const imgExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.svg', '.webp'];
