@@ -103,13 +103,7 @@ const reportIP = async (event, uri, country, hostname, endpoint, cycleErrorCount
 	}
 
 	// Ready
-	if (CONFIG.MAIN.NODE_ENV === 'production') {
-		try {
-			process.send('ready');
-		} catch (err) {
-			log(0, `Failed to send ready signal to parent process. ${err.message}`);
-		}
-	}
+	process.send && process.send('ready');
 
 	// AbuseIPDB
 	let cycleId = 1;
