@@ -6,29 +6,32 @@ const headers = require('./utils/headers.js');
 const { logToCSV, readReportedIPs } = require('./services/csv.js');
 const formatDelay = require('./utils/formatDelay.js');
 const fetchServerIP = require('./services/fetchServerIP.js');
-const whitelist = require('./utils/whitelist.js');
+const getFilters = require('./services/getFilters.js');
 const log = require('./utils/log.js');
 
-const fetchBlockedIPs = async () => {
+const fetchBlockedIPs = async whitelist => {
 	try {
 		const { data, status } = await axios.post('https://api.cloudflare.com/client/v4/graphql', PAYLOAD(), { headers: headers.CLOUDFLARE });
-		const events = data?.data?.viewer?.zones[0]?.firewallEventsAdaptive;
-		if (events) {
-			const filtered = events.filter(x =>
-				x.ip !== fetchServerIP() &&
-				!whitelist.imgExtensions.some(ext => x.clientRequestPath.endsWith(ext)) &&
-				!whitelist.domains.some(subdomain => x.clientRequestHTTPHost?.includes(subdomain)) &&
-				!whitelist.endpoints.some(endpoint => x.clientRequestPath?.includes(endpoint))
-			);
+		const events = data?.data?.viewer?.zones?.[0]?.firewallEventsAdaptive;
+		if (!events) throw new Error(`Failed to retrieve data from Cloudflare (status ${status}): ${JSON.stringify(data?.errors)}`);
 
-			log(0, `Fetched ${events.length} (filtered ${filtered.length}) events from Cloudflare`);
-			return filtered;
-		} else {
-			throw new Error(`Failed to retrieve data from Cloudflare (status ${status}); ${JSON.stringify(data?.errors)}`);
-		}
+		const isWhitelisted = event =>
+			event.ip === fetchServerIP() ||
+			whitelist.userAgents.some(ua => event.userAgent.includes(ua)) ||
+			whitelist.imgExtensions.some(ext => event.clientRequestPath.endsWith(ext)) ||
+			whitelist.domains.some(domain => event.clientRequestHTTPHost?.includes(domain)) ||
+			whitelist.endpoints.some(endpoint => event.clientRequestPath?.includes(endpoint));
+
+		const filtered = events.filter(event => !isWhitelisted(event));
+
+		log(0, `Fetched ${events.length} events (filtered ${filtered.length}) from Cloudflare`);
+		return filtered;
 	} catch (err) {
-		log(2, err.response?.data ? `${err.response.status} HTTP ERROR Cloudflare API: ${JSON.stringify(err.response.data, null, 2)}` : `Unknown error with Cloudflare API: ${err.message}`);
-		return null;
+		log(2, err.response?.data
+			? `${err.response.status} HTTP ERROR Cloudflare API: ${JSON.stringify(err.response.data, null, 2)}`
+			: `Unknown error with Cloudflare API: ${err.message}`
+		);
+		return [];
 	}
 };
 
@@ -108,9 +111,11 @@ const reportIP = async (event, uri, country, hostname, endpoint, cycleErrorCount
 	// AbuseIPDB
 	let cycleId = 1;
 	while (true) {
+		const whitelist = await getFilters();
+
 		log(0, `===================== Reporting Cycle No. ${cycleId} =====================`);
 
-		const blockedIPEvents = await fetchBlockedIPs();
+		const blockedIPEvents = await fetchBlockedIPs(whitelist);
 		if (!blockedIPEvents) {
 			log(1, 'No events fetched, skipping cycle...');
 			continue;
@@ -136,13 +141,6 @@ const reportIP = async (event, uri, country, hostname, endpoint, cycleErrorCount
 			const reportedIPs = readReportedIPs();
 			const { recentlyReported } = isIPReportedRecently(event.rayName, ip, reportedIPs);
 			if (recentlyReported) {
-				// if (MAIN.NODE_ENV === 'development') {
-				// 	const hoursAgo = Math.floor(timeDifference / (1000 * 60 * 60));
-				// 	const minutesAgo = Math.floor((timeDifference % (1000 * 60 * 60)) / (1000 * 60));
-				// 	const secondsAgo = Math.floor((timeDifference % (1000 * 60)) / 1000);
-				// 	log(0, `${ip} was ${reason} ${hoursAgo}h ${minutesAgo}m ${secondsAgo}s ago. Skipping...`);
-				// }
-
 				cycleSkippedCount++;
 				continue;
 			}
