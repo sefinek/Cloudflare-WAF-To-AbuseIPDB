@@ -105,5 +105,5 @@ This project is inspired by the [MHG-LAB/Cloudflare-WAF-to-AbuseIPDB](https://gi
 I'm not particularly fond of Python and usually try to avoid using this programming language, which is why I decided to create this repository.
 
 
-## 📑 MIT License
+## 📑 [MIT License](LICENSE)
 Copyright 2024-2025 © by [Sefinek](https://sefinek.net). All Rights Reserved.
