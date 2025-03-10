@@ -166,7 +166,6 @@ const cron = async () => {
 
 	// Ready
 	process.send && process.send('ready');
-
 	log(0, 'The integration is ready!');
 
 	// AbuseIPDB
