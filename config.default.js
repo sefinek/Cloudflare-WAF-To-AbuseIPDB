@@ -7,8 +7,8 @@ exports.CONFIG = {
 	},
 
 	CYCLES: {
-		// Main interval (in minutes) of each cycle
-		CYCLE_INTERVAL: 120 * 60 * 1000,
+		// Schedule for running cron jobs for reporting to AbuseIPDB.
+		REPORT_SCHEDULE: '0 */2 * * *',
 
 		// The minimum time (in hours) that must pass after reporting an IP address before it can be reported again.
 		// The required time is >= 15 minutes, according to AbuseIPDB API limits.
@@ -19,7 +19,7 @@ exports.CONFIG = {
 		MAX_URL_LENGTH: 780,
 
 		// Additional delay (in milliseconds) after each successful IP report to avoid overloading the AbuseIPDB API.
-		SUCCESS_COOLDOWN: 30,
+		SUCCESS_COOLDOWN: 20,
 
 		// Interval for refreshing your IP address (in minutes).
 		// This ensures that WAF violations originating from your IP address are not reported to AbuseIPDB.
