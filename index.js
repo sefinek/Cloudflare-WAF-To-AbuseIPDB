@@ -88,7 +88,11 @@ const reportIP = async (event, uri, country, hostname, endpoint, cycleErrorCount
 			log(0, `429 for ${event.clientIP} (${event.rayName}); Endpoint: ${endpoint}`);
 			cycleErrorCounts.blocked++;
 		} else {
-			log(2, `Error ${err.response?.status} while reporting ${event.clientIP}; URI: ${uri}; ${err.response?.data?.errors[0]?.detail || JSON.stringify(err.response?.data) || err.message}`);
+			const errorDetails = Array.isArray(err.response?.data?.errors) && err.response.data.errors.length > 0
+				? err.response.data.errors[0]?.detail
+				: JSON.stringify(err.response?.data) || err.message || 'Unknown error';
+			log(2, `Error ${err.response?.status} while reporting ${event?.clientIP}; URI: ${uri}; ${errorDetails}`);
+
 			cycleErrorCounts.otherErrors++;
 		}
 
@@ -136,7 +140,10 @@ const reportIP = async (event, uri, country, hostname, endpoint, cycleErrorCount
 				continue;
 			}
 
-			if (whitelist.endpoints.includes(event.clientRequestPath)) return log(0, `Skipping ${event.clientRequestPath}...`);
+			if (whitelist.endpoints.includes(event.clientRequestPath)) {
+				log(0, `Skipping ${event.clientRequestPath}...`);
+				continue;
+			}
 
 			const reportedIPs = readReportedIPs();
 			const { recentlyReported } = isIPReportedRecently(event.rayName, ip, reportedIPs);
