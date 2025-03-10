@@ -1,9 +1,10 @@
 exports.CONFIG = {
 	MAIN: {
 		NODE_ENV: 'production', // Environment mode: 'production' or 'development'
-		CLOUDFLARE_ZONE_ID: '00000000000000000000000000000000', // https://dash.cloudflare.com/profile/api-tokens
-		CLOUDFLARE_API_KEY: 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX', // API key for Cloudflare access
+		CLOUDFLARE_ZONE_ID: '00000000000000000000000000000000', // API key for Cloudflare access
+		CLOUDFLARE_API_KEY: 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX', // https://dash.cloudflare.com/profile/api-tokens
 		ABUSEIPDB_API_KEY: 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX', // API key for reporting malicious IPs to AbuseIPDB
+		RUN_ON_START: true, // Should the reporting function run immediately after the script starts?
 	},
 
 	CYCLES: {

@@ -168,7 +168,9 @@ const cron = async () => {
 	// Ready
 	process.send && process.send('ready');
 
+	log(0, 'The integration is ready!');
+
 	// AbuseIPDB
 	new CronJob(CONFIG.CYCLES.REPORT_SCHEDULE, cron, null, true, 'UTC');
-	await cron();
+	if (CONFIG.MAIN.RUN_ON_START) await cron();
 })();
