@@ -166,7 +166,7 @@ const reportIP = async (event, uri, country, hostname, endpoint, cycleErrorCount
 		log(0, `- Other errors: ${cycleErrorCounts.otherErrors}`);
 		log(0, '===================== End of Reporting Cycle =====================');
 
-		log(0, `Waiting ${formatDelay(CONFIG.CYCLES.CYCLE_INTERVAL)}...`);
+		log(0, `Waiting ${formatDelay(CONFIG.CYCLES.CYCLE_INTERVAL)} (${CONFIG.CYCLES.CYCLE_INTERVAL} ms)...`);
 		cycleId++;
 		await new Promise(resolve => setTimeout(resolve, CONFIG.CYCLES.CYCLE_INTERVAL));
 	}
