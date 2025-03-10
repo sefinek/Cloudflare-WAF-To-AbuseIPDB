@@ -34,8 +34,8 @@ exports.CONFIG = {
 		// Secret key for api.sefinek.net
 		SECRET_TOKEN: '',
 
-		// How often should the log (reported_ips.csv) be analyzed and sent to the Sefinek API? In hours.
-		INTERVAL: 60 * 60 * 1000, // Frequency for analyzing and submitting logs to the Sefinek API
+		// How often should the log (reported_ips.csv) be analyzed and sent to the Sefinek API?
+		REPORT_SCHEDULE: '0 */1 * * *',
 	},
 };
 

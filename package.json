@@ -1,6 +1,6 @@
 {
   "name": "cf-waf-to-abuseipdb",
-  "version": "1.4.1",
+  "version": "1.5.0",
   "description": "Node.js script for automatically reporting incidents to AbuseIPDB using data obtained from Cloudflare WAF.",
   "homepage": "https://github.com/sefinek/Cloudflare-WAF-To-AbuseIPDB",
   "bugs": {

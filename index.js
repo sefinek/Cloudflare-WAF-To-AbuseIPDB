@@ -160,9 +160,8 @@ const cron = async () => {
 	log(0, 'Loading data, please wait...');
 
 	// Sefinek API
-	// await SefinekAPI();
-	if (CONFIG.SEFINEK_API.REPORT_TO_SEFIN_API && CONFIG.SEFINEK_API.INTERVAL && CONFIG.SEFINEK_API.SECRET_TOKEN) {
-		setInterval(SefinekAPI, CONFIG.SEFINEK_API.INTERVAL);
+	if (CONFIG.SEFINEK_API.REPORT_TO_SEFIN_API && CONFIG.SEFINEK_API.SECRET_TOKEN && CONFIG.SEFINEK_API.REPORT_SCHEDULE) {
+		new CronJob(CONFIG.SEFINEK_API.REPORT_SCHEDULE, SefinekAPI, null, true, 'UTC');
 	}
 
 	// Ready
