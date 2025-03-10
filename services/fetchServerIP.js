@@ -1,5 +1,5 @@
 const { networkInterfaces } = require('node:os');
-const axios = require('./axios.js');
+const { get } = require('./axios.js');
 const isLocalIP = require('../utils/isLocalIP.js');
 const log = require('../utils/log.js');
 const { CYCLES } = require('../config.js').CONFIG;
@@ -8,7 +8,7 @@ const ipAddrList = new Set();
 
 const fetchIPv4Address = async () => {
 	try {
-		const { data } = await axios.get('https://api.sefinek.net/api/v2/ip');
+		const { data } = await get('https://api.sefinek.net/api/v2/ip');
 		if (data?.success && data?.message) ipAddrList.add(data.message);
 	} catch (err) {
 		log(2, `Error fetching IPv4 address: ${err.message}`);
