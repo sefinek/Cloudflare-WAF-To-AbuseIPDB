@@ -24,7 +24,6 @@ ASN: 53667 (PONYNET)
 Protocol: HTTP/1.0 (method GET)
 Endpoint: /
 Timestamp: 2024-11-09T19:20:18Z
-Ray ID: 8e0028cb79ab3a96
 Rule ID: badscore
 UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.5042.0 Safari/537.36
 

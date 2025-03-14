@@ -48,7 +48,7 @@ exports.GENERATE_COMMENT = ({ action, clientAsn, clientASNDescription, clientReq
 		{ label: 'Endpoint', value: clientRequestPath },
 		{ label: 'Query', value: clientRequestQuery },
 		{ label: 'Timestamp', value: datetime },
-		{ label: 'Ray ID', value: rayName },
+		// { label: 'Ray ID', value: rayName },
 		// { label: 'Rule ID', value: ruleId },
 		{ label: 'UA', value: userAgent || 'Empty string' },
 	];
