@@ -54,7 +54,6 @@ const fetchLocalIPs = () => {
 
 const refreshServerIPs = async () => {
 	await Promise.all([fetchIPAddress(4), fetchIPAddress(6)]);
-	fetchLocalIPs();
 };
 
 (async () => {
