@@ -5,19 +5,18 @@ const PAYLOAD = require('./services/payload.js');
 const SefinekAPI = require('./services/SefinekAPI.js');
 const headers = require('./utils/headers.js');
 const { logToCSV, readReportedIPs } = require('./services/csv.js');
-const formatDelay = require('./utils/formatDelay.js');
-const fetchServerIP = require('./services/fetchServerIP.js');
+const { refreshServerIPs, getServerIPs } = require('./services/ipFetcher.js');
 const getFilters = require('./services/getFilters.js');
 const log = require('./utils/log.js');
 
-const fetchBlockedIPs = async whitelist => {
+const fetchCloudflareEvents = async whitelist => {
 	try {
 		const { data, status } = await axios.post('https://api.cloudflare.com/client/v4/graphql', PAYLOAD(), { headers: headers.CLOUDFLARE });
 		const events = data?.data?.viewer?.zones?.[0]?.firewallEventsAdaptive;
 		if (!events) throw new Error(`Failed to retrieve data from Cloudflare (status ${status}): ${JSON.stringify(data?.errors)}`);
 
 		const isWhitelisted = event =>
-			event.ip === fetchServerIP() ||
+			getServerIPs().includes(event.ip) ||
 			whitelist.userAgents.some(ua => event.userAgent.includes(ua)) ||
 			whitelist.imgExtensions.some(ext => event.clientRequestPath.endsWith(ext)) ||
 			whitelist.domains.some(domain => event.clientRequestHTTPHost?.includes(domain)) ||
@@ -60,7 +59,7 @@ const reportIP = async (event, uri, country, hostname, endpoint, cycleErrorCount
 		return false;
 	}
 
-	if (event.clientIP === fetchServerIP()) {
+	if (getServerIPs().includes(event.clientIP)) {
 		logToCSV(event.rayName, event.clientIP, country, hostname, endpoint, event.userAgent, event.action, 'YOUR_IP_ADDRESS');
 		log(0, `Your IP address (${event.clientIP}) was unexpectedly received from Cloudflare. URI: ${uri}`);
 		return false;
@@ -104,23 +103,27 @@ const reportIP = async (event, uri, country, hostname, endpoint, cycleErrorCount
 let cycleId = 1;
 
 const cron = async () => {
+	log(0, `======================== Reporting Cycle No. ${cycleId} ========================`);
+
+	// Fetch cloudflare events
 	const whitelist = await getFilters();
+	const events = await fetchCloudflareEvents(whitelist);
+	if (!events) return log(1, 'No events fetched, skipping cycle...');
 
-	log(0, `===================== Reporting Cycle No. ${cycleId} =====================`);
+	// IP
+	await refreshServerIPs();
+	const ips = getServerIPs();
+	if (!Array.isArray(ips)) return log(2, 'For some reason, \'ips\' is not an array');
+	log(0, `Fetched ${getServerIPs()?.length} of your IP addresses`);
 
-	const blockedIPEvents = await fetchBlockedIPs(whitelist);
-	if (!blockedIPEvents) return log(1, 'No events fetched, skipping cycle...');
-
-	const serverIP = fetchServerIP();
-	if (!serverIP) log(1, `Server IP address is missing! Received: ${serverIP}`);
-
+	// Cycle
 	let cycleProcessedCount = 0, cycleReportedCount = 0, cycleSkippedCount = 0;
 	const cycleErrorCounts = { blocked: 0, otherErrors: 0 };
 
-	for (const event of blockedIPEvents) {
+	for (const event of events) {
 		cycleProcessedCount++;
 		const ip = event.clientIP;
-		if (ip === serverIP) {
+		if (getServerIPs().includes(ip)) {
 			log(0, `The IP address ${ip} belongs to this machine. Ignoring...`);
 			cycleSkippedCount++;
 			continue;
@@ -164,11 +167,12 @@ const cron = async () => {
 		new CronJob(CONFIG.SEFINEK_API.REPORT_SCHEDULE, SefinekAPI, null, true, 'UTC');
 	}
 
-	// Ready
-	process.send && process.send('ready');
-	log(0, 'The integration is ready!');
-
 	// AbuseIPDB
 	new CronJob(CONFIG.CYCLES.REPORT_SCHEDULE, cron, null, true, 'UTC');
+
+	// Ready
+	process.send && process.send('ready');
+
+	// Run on start?
 	if (CONFIG.MAIN.RUN_ON_START) await cron();
 })();

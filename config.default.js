@@ -5,10 +5,11 @@ exports.CONFIG = {
 		CLOUDFLARE_API_KEY: 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX', // https://dash.cloudflare.com/profile/api-tokens
 		ABUSEIPDB_API_KEY: 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX', // API key for reporting malicious IPs to AbuseIPDB
 		RUN_ON_START: true, // Should the reporting function run immediately after the script starts?
+		IPv6_SUPPORT: true, // Specifies whether the device has been assigned an IPv6 address.
 	},
 
 	CYCLES: {
-		// Schedule for running cron jobs for reporting to AbuseIPDB.
+		// CRON: Schedule for running cron jobs for reporting to AbuseIPDB.
 		REPORT_SCHEDULE: '0 */2 * * *',
 
 		// The minimum time (in hours) that must pass after reporting an IP address before it can be reported again.
@@ -22,9 +23,9 @@ exports.CONFIG = {
 		// Additional delay (in milliseconds) after each successful IP report to avoid overloading the AbuseIPDB API.
 		SUCCESS_COOLDOWN: 20,
 
-		// Interval for refreshing your IP address (in minutes).
+		// CRON: Interval for refreshing your IP address. Default: every 6 hours
 		// This ensures that WAF violations originating from your IP address are not reported to AbuseIPDB.
-		IP_REFRESH_INTERVAL: 8 * 60 * 1000,
+		IP_REFRESH_SCHEDULE: '0 */6 * * *',
 	},
 
 	SEFINEK_API: {

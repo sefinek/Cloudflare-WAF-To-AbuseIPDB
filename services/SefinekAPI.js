@@ -1,7 +1,7 @@
 const axios = require('./axios.js');
 const { readReportedIPs, updateSefinekAPIInCSV } = require('./csv.js');
 const log = require('../utils/log.js');
-const fetchServerIP = require('./fetchServerIP.js');
+const fetchServerIP = require('./ipFetcher.js');
 const { SEFINEK_API } = require('../config.js').CONFIG;
 
 module.exports = async () => {
