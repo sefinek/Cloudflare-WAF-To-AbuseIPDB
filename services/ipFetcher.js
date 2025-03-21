@@ -4,14 +4,14 @@ const { CronJob } = require('cron');
 const { get } = require('./axios.js');
 const isLocalIP = require('../utils/isLocalIP.js');
 const log = require('../utils/log.js');
-const { CYCLES, IPv6_SUPPORT } = require('../config.js').CONFIG;
+const { MAIN, CYCLES } = require('../config.js').CONFIG;
 
 const ipAddresses = new Set();
 let ipv6ErrorCount = 0, ipv6ErrorLogged = false;
 const IPv6Failed = 'It looks like your ISP hasn\'t assigned you any IPv6 address. I won\'t attempt to fetch it again.';
 
 const fetchIPAddress = async family => {
-	if (family === 6 && (ipv6ErrorLogged || !IPv6_SUPPORT)) return;
+	if (family === 6 && (ipv6ErrorLogged || !MAIN.IPv6_SUPPORT)) return;
 
 	try {
 		const { data } = await get('https://api.sefinek.net/api/v2/ip', {
