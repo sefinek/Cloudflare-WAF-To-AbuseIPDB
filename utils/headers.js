@@ -1,7 +1,7 @@
 const { MAIN } = require('../config.js').CONFIG;
-const { version, homepage } = require('../package.json');
+const { version } = require('../package.json');
 
-const UserAgent = `Mozilla/5.0 (compatible; Cloudflare-WAF-To-AbuseIPDB/${version}; +${homepage})`;
+const UserAgent = `Mozilla/5.0 (compatible; Cloudflare-WAF-To-AbuseIPDB/${version}; +https://github.com/sefinek/Cloudflare-WAF-To-AbuseIPDB)`;
 
 const CLOUDFLARE = {
 	'User-Agent': UserAgent,
