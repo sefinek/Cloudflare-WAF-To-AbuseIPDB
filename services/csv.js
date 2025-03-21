@@ -3,7 +3,7 @@ const path = require('node:path');
 const log = require('../utils/log.js');
 
 const CSV_FILE_PATH = path.join(__dirname, '..', 'reported_ips.csv');
-const MAX_CSV_SIZE_BYTES = 3 * 1024 * 1024; // 3 MB
+const MAX_CSV_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
 const CSV_HEADER = 'Timestamp,CF RayID,IP,Country,Hostname,Endpoint,User-Agent,Action taken,Status,Sefinek API\n';
 
 if (!fs.existsSync(CSV_FILE_PATH)) fs.writeFileSync(CSV_FILE_PATH, CSV_HEADER);
@@ -12,7 +12,7 @@ const checkCSVSize = () => {
 	const stats = fs.statSync(CSV_FILE_PATH);
 	if (stats.size > MAX_CSV_SIZE_BYTES) {
 		fs.writeFileSync(CSV_FILE_PATH, CSV_HEADER);
-		log(0, `CSV file size exceeded ${MAX_CSV_SIZE_BYTES / (1024 * 1024)} MB. File has been reset.`);
+		log(0, `The CSV file size exceeded ${MAX_CSV_SIZE_BYTES / (1024 * 1024)} MB. To save memory, its contents have been removed.`);
 	}
 };
 
