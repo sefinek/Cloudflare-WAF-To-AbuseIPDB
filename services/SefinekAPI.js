@@ -1,11 +1,11 @@
 const axios = require('./axios.js');
 const { readReportedIPs, updateSefinekAPIInCSV } = require('./csv.js');
 const log = require('../utils/log.js');
-const fetchServerIP = require('./ipFetcher.js');
+const { getServerIPs } = require('./ipFetcher.js');
 const { SEFINEK_API } = require('../config.js').CONFIG;
 
 module.exports = async () => {
-	const reportedIPs = (readReportedIPs() || []).filter(x => x.status === 'REPORTED' && x.ip !== fetchServerIP() && !x.sefinekAPI);
+	const reportedIPs = (readReportedIPs() || []).filter(x => x.status === 'REPORTED' && !getServerIPs().includes(x.ip) && !x.sefinekAPI);
 	if (!reportedIPs.length) return log(0, 'Sefinek API: No data to report');
 
 	const seenIPs = new Set();
