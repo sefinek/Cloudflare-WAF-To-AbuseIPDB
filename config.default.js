@@ -10,7 +10,7 @@ exports.CONFIG = {
 
 	CYCLES: {
 		// CRON: Schedule for running cron jobs for reporting to AbuseIPDB.
-		REPORT_SCHEDULE: '0 */2 * * *',
+		REPORT_SCHEDULE: '0 */3 * * *',
 
 		// The minimum time (in hours) that must pass after reporting an IP address before it can be reported again.
 		// The required time is >= 15 minutes, according to AbuseIPDB API limits.
@@ -36,7 +36,7 @@ exports.CONFIG = {
 		SECRET_TOKEN: '',
 
 		// How often should the log (reported_ips.csv) be analyzed and sent to the Sefinek API?
-		REPORT_SCHEDULE: '0 */1 * * *',
+		REPORT_SCHEDULE: '0 */2 * * *',
 	},
 };
 
