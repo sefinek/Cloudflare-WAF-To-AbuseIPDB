@@ -3,7 +3,7 @@ const path = require('node:path');
 const log = require('../utils/log.js');
 
 const CSV_FILE_PATH = path.join(__dirname, '..', 'reported_ips.csv');
-const MAX_CSV_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
+const MAX_CSV_SIZE_BYTES = 4 * 1024 * 1024; // 4 MB
 const CSV_HEADER = 'Timestamp,CF RayID,IP,Country,Hostname,Endpoint,User-Agent,Action taken,Status,Sefinek API\n';
 
 if (!fs.existsSync(CSV_FILE_PATH)) fs.writeFileSync(CSV_FILE_PATH, CSV_HEADER);
