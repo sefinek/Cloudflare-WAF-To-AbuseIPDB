@@ -11,7 +11,7 @@ const log = require('./utils/log.js');
 
 const fetchCloudflareEvents = async whitelist => {
 	try {
-		const { data, status } = await axios.post('https://api.cloudflare.com/client/v4/graphql', PAYLOAD(), {
+		const { data, status } = await axios.post('https://api.cloudflare.com/client/v4/graphql', PAYLOAD(1000), {
 			headers: headers.CLOUDFLARE,
 		});
 

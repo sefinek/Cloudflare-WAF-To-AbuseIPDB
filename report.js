@@ -6,7 +6,7 @@ const log = require('./utils/log.js');
 
 const fetchCloudflareEvents = async () => {
 	try {
-		const { data, status } = await axios.post('https://api.cloudflare.com/client/v4/graphql', PAYLOAD(), {
+		const { data, status } = await axios.post('https://api.cloudflare.com/client/v4/graphql', PAYLOAD(10000), {
 			headers: headers.CLOUDFLARE,
 		});
 

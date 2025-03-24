@@ -1,34 +1,6 @@
 const { MAIN } = require('../config.js').CONFIG;
 
-const query = `query ListFirewallEvents($zoneTag: string, $filter: FirewallEventsAdaptiveFilter_InputObject) {
-  viewer {
-    zones(filter: { zoneTag: $zoneTag }) {
-      firewallEventsAdaptive(
-        filter: $filter,
-        limit: 1000,
-        orderBy: [datetime_DESC]
-      ) {
-        action
-        clientASNDescription
-        clientAsn
-        clientCountryName
-        clientIP
-        clientRequestHTTPHost
-        clientRequestHTTPMethodName
-        clientRequestHTTPProtocol
-        clientRequestPath
-        clientRequestQuery
-        datetime
-        rayName
-        ruleId
-        source
-        userAgent
-      }
-    }
-  }
-}`;
-
-module.exports = () => {
+module.exports = limit => {
 	const variables = {
 		zoneTag: MAIN.CLOUDFLARE_ZONE_ID,
 		filter: {
@@ -51,5 +23,30 @@ module.exports = () => {
 		},
 	};
 
-	return { query, variables };
+	return { query: `query ListFirewallEvents($zoneTag: string, $filter: FirewallEventsAdaptiveFilter_InputObject) {
+  viewer {
+    zones(filter: { zoneTag: $zoneTag }) {
+      firewallEventsAdaptive(
+        filter: $filter,
+        limit: ${limit},
+        orderBy: [datetime_DESC]
+      ) {
+        action
+        clientASNDescription
+        clientAsn
+        clientCountryName
+        clientIP
+        clientRequestHTTPHost
+        clientRequestHTTPMethodName
+        clientRequestHTTPProtocol
+        clientRequestPath
+        clientRequestQuery
+        datetime
+        rayName
+        ruleId
+        source
+        userAgent
+      }
+    }
+  }}`, variables };
 };

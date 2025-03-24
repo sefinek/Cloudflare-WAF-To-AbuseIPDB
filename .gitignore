@@ -1,4 +1,4 @@
 node_modules
 config.js
-.csv
-.txt
+*.csv
+*.txt
