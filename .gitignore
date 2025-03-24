@@ -1,3 +1,4 @@
 node_modules
 config.js
-reported_ips.csv
+.csv
+.txt

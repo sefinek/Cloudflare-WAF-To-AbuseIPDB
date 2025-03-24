@@ -1,6 +1,6 @@
 {
   "name": "cf-waf-to-abuseipdb",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "description": "Node.js script for automatically reporting incidents to AbuseIPDB using data obtained from Cloudflare WAF.",
   "homepage": "https://github.com/sefinek/Cloudflare-WAF-To-AbuseIPDB#readme",
   "bugs": {
@@ -24,7 +24,7 @@
     "ipaddr.js": "^2.2.0"
   },
   "devDependencies": {
-    "@eslint/js": "^9.22.0",
+    "@eslint/js": "^9.23.0",
     "globals": "^16.0.0"
   }
 }
