@@ -2,7 +2,7 @@
 This project offers an automated script that collects and reports IP addresses that have triggered Cloudflare firewall events.
 In simple terms, it enables the reporting of incidents detected by Cloudflare WAF to the AbuseIPDB database.
 
-If you're looking for **effective WAF Expressions**, you're in the right place! Check out [sefinek/Cloudflare-WAF-Expressions](https://github.com/sefinek/Cloudflare-WAF-Expressions).
+If you're looking for **effective WAF Expressions**, you're in the right place! Check out [sefinek/Cloudflare-WAF-Rules](https://github.com/sefinek/Cloudflare-WAF-Rules).
 Also, take a look at [sefinek/UFW-AbuseIPDB-Reporter](https://github.com/sefinek/UFW-AbuseIPDB-Reporter) for UFW.
 
 > If you like this repository or find it useful, I would greatly appreciate it if you could give it a star ⭐. Thanks a lot!
