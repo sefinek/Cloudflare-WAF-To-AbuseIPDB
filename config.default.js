@@ -43,12 +43,12 @@ exports.CONFIG = {
 exports.GENERATE_COMMENT = ({ action, clientAsn, clientASNDescription, clientRequestHTTPProtocol, clientRequestHTTPMethodName, clientRequestHTTPHost, clientRequestPath, clientRequestQuery, datetime, rayName, ruleId, userAgent, source, clientCountryName }) => {
 	const fields = [
 		{ label: 'Action taken', value: action?.toUpperCase() },
-		{ label: 'ASN', value: `${clientAsn} (${clientASNDescription})` },
+		// { label: 'ASN', value: `${clientAsn} (${clientASNDescription})` },
 		{ label: 'Protocol', value: `${clientRequestHTTPProtocol} (${clientRequestHTTPMethodName} method)` },
 		// { label: 'Zone', value: clientRequestHTTPHost },
-		// { label: 'Endpoint', value: clientRequestPath },
+		{ label: 'Endpoint', value: clientRequestPath },
 		// { label: 'Query', value: clientRequestQuery },
-		{ label: 'Timestamp', value: datetime },
+		// { label: 'Timestamp', value: datetime },
 		// { label: 'Ray ID', value: rayName },
 		// { label: 'Rule ID', value: ruleId },
 		{ label: 'UA', value: userAgent || 'Empty string' },
