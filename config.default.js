@@ -30,7 +30,7 @@ exports.CONFIG = {
 
 	SEFINEK_API: {
 		// Report IP addresses to api.sefinek.net to support the development of the repository at https://github.com/sefinek/Malicious-IP-Addresses. SECRET_TOKEN is required if true.
-		REPORT_TO_SEFIN_API: false,
+		ENABLED: false,
 
 		// Secret key for api.sefinek.net
 		SECRET_TOKEN: '',
