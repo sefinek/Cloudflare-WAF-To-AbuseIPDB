@@ -20,11 +20,11 @@
   },
   "dependencies": {
     "axios": "^1.8.4",
-    "cron": "^4.1.0",
+    "cron": "^4.3.0",
     "ipaddr.js": "^2.2.0"
   },
   "devDependencies": {
-    "@eslint/js": "^9.23.0",
+    "@eslint/js": "^9.24.0",
     "globals": "^16.0.0"
   }
 }
