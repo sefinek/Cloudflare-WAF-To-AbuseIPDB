@@ -18,7 +18,7 @@ exports.CONFIG = {
 
 		// The maximum URI length that can be reported to AbuseIPDB.
 		// If Cloudflare returns a longer URI, the API request will fail.
-		MAX_URL_LENGTH: 780,
+		MAX_URL_LENGTH: 800,
 
 		// Additional delay (in milliseconds) after each successful IP report to avoid overloading the AbuseIPDB API.
 		SUCCESS_COOLDOWN: 20,
