@@ -29,7 +29,7 @@ module.exports = async () => {
 				country: ip.country,
 				timestamp: ip.timestamp,
 			})),
-		}, { headers: { 'Authorization': SEFINEK_API.SECRET_TOKEN } });
+		}, { headers: { 'X-API-Key': SEFINEK_API.SECRET_TOKEN } });
 
 		log(0, `Sefinek API: Successfully sent ${uniqueLogs.length} logs! Status: ${res.status}`);
 
