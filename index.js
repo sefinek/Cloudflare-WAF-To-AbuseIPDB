@@ -167,11 +167,11 @@ const cron = async () => {
 
 	// Sefinek API
 	if (CONFIG.SEFINEK_API.REPORT_TO_SEFIN_API && CONFIG.SEFINEK_API.SECRET_TOKEN && CONFIG.SEFINEK_API.REPORT_SCHEDULE) {
-		new CronJob(CONFIG.SEFINEK_API.REPORT_SCHEDULE, SefinekAPI, null, true, 'UTC');
+		new CronJob(CONFIG.SEFINEK_API.REPORT_SCHEDULE, SefinekAPI, null, true);
 	}
 
 	// AbuseIPDB
-	new CronJob(CONFIG.CYCLES.REPORT_SCHEDULE, cron, null, true, 'UTC');
+	new CronJob(CONFIG.CYCLES.REPORT_SCHEDULE, cron, null, true);
 
 	// Ready
 	process.send && process.send('ready');

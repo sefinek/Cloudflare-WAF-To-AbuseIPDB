@@ -58,7 +58,7 @@ const refreshServerIPs = async () => {
 };
 
 (async () => {
-	new CronJob(CYCLES.IP_REFRESH_SCHEDULE || '0 */6 * * *', refreshServerIPs, null, true, 'UTC');
+	new CronJob(CYCLES.IP_REFRESH_SCHEDULE || '0 */6 * * *', refreshServerIPs, null, true);
 })();
 
 module.exports = {
