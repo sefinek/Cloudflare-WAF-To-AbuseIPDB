@@ -1,14 +1,14 @@
 module.exports = {
 	apps: [{
-		name: 'cwa',
+		name: 'cf-abuseipdb',
 		script: './index.js',
 
 		// Logging settings
 		log_date_format: 'HH:mm:ss.SSS DD.MM.YYYY',
 		merge_logs: true,
-		log_file: '~/logs/other/cf-waf-abuseipdb/combined.log',
-		out_file: '~/logs/other/cf-waf-abuseipdb/out.log',
-		error_file: '~/logs/other/cf-waf-abuseipdb/error.log',
+		log_file: '~/logs/other/cf-waf-to-abuseipdb/combined.log',
+		out_file: '~/logs/other/cf-waf-to-abuseipdb/out.log',
+		error_file: '~/logs/other/cf-waf-to-abuseipdb/error.log',
 
 		// Application restart policy
 		wait_ready: true,
