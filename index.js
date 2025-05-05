@@ -70,18 +70,19 @@ const fetchCloudflareEvents = async whitelist => {
 	}
 };
 
+const knownStatuses = new Set(['TOO_MANY_REQUESTS', 'REPORTED', 'READY_FOR_BULK_REPORT', 'RL_BULK_REPORT']);
 const isIPReportedRecently = (rayId, ip, reportedIPs) => {
 	const lastReport = reportedIPs.reduce((latest, entry) => {
 		if (
 			(entry.rayId === rayId || entry.ip === ip) &&
-			(entry.status === 'TOO_MANY_REQUESTS' || entry.status === 'REPORTED' || entry.status === 'READY_FOR_BULK_REPORT' || entry.status === 'RL_BULK_REPORT') &&
+			knownStatuses.has(entry.status) &&
 			(!latest || entry.timestamp > latest.timestamp)
 		) return entry;
 		return latest;
 	}, null);
 
 	if (lastReport && (Date.now() - lastReport.timestamp) < MAIN.REPORTED_IP_COOLDOWN) {
-		return { recentlyReported: true, timeDifference: Date.now() - lastReport.timestamp, reason: lastReport.status === 'TOO_MANY_REQUESTS' ? 'RATE-LIMITED' : 'REPORTED' };
+		return { recentlyReported: true, reason: lastReport.status };
 	}
 
 	return { recentlyReported: false };
@@ -91,11 +92,13 @@ const reportIP = async (event, categories, comment) => {
 	await checkRateLimit();
 
 	if (ABUSE_STATE.isBuffering) {
-		if (BULK_REPORT_BUFFER.has(event.clientIP)) return { success: null };
-		BULK_REPORT_BUFFER.set(event.clientIP, { categories, timestamp: event.datetime, comment });
-		await saveBufferToFile();
-		log(`Queued ${event.clientIP} for bulk report (collected ${BULK_REPORT_BUFFER.size} IPs)`, 1);
-		return { success: false, code: 'READY_FOR_BULK_REPORT' };
+		if (!BULK_REPORT_BUFFER.has(event.clientIP)) {
+			BULK_REPORT_BUFFER.set(event.clientIP, { categories, timestamp: event.datetime, comment });
+			await saveBufferToFile();
+			log(`Queued ${event.clientIP} for bulk report (collected ${BULK_REPORT_BUFFER.size} IPs)`, 1);
+			return { success: false, code: 'READY_FOR_BULK_REPORT' };
+		}
+		return { success: false, code: 'ALREADY_IN_BUFFER' };
 	}
 
 	try {
@@ -119,19 +122,17 @@ const reportIP = async (event, categories, comment) => {
 				log(`Daily AbuseIPDB limit reached. Buffering reports until ${RATELIMIT_RESET.toISOString()}`, 0, true);
 			}
 
-			if (BULK_REPORT_BUFFER.has(event.clientIP)) {
-				log(`${event.clientIP} is already in buffer, skipping`);
-				return { success: null, code: 'ALREADY_IN_BUFFER' };
+			if (!BULK_REPORT_BUFFER.has(event.clientIP)) {
+				BULK_REPORT_BUFFER.set(event.clientIP, { timestamp: event.datetime, categories, comment });
+				await saveBufferToFile();
+				log(`Queued ${event.clientIP} for bulk report due to rate limit`);
+				return { success: false, code: 'RL_BULK_REPORT' };
 			}
 
-			BULK_REPORT_BUFFER.set(event.clientIP, { timestamp: event.datetime, categories, comment });
-			await saveBufferToFile();
-			log(`Queued ${event.clientIP} for bulk report due to rate limit`);
-			return { success: false, code: 'RL_BULK_REPORT' };
-		} else {
-			log(`Failed to report ${event.clientIP}; ${err.response?.data?.errors ? JSON.stringify(err.response.data.errors) : err.message}`, status === 429 ? 0 : 3);
+			return { success: false, code: 'ALREADY_IN_BUFFER' };
 		}
 
+		log(`Failed to report ${event.clientIP}; ${err.response?.data?.errors ? JSON.stringify(err.response.data.errors) : err.message}`, 3);
 		return { success: false, code: 'FAILED' };
 	}
 };
@@ -144,9 +145,11 @@ const processData = async () => {
 	// Fetch cloudflare events
 	const whitelist = await getFilters();
 	const events = await fetchCloudflareEvents(whitelist);
-	if (!events) return log('No events fetched, skipping cycle...');
+	if (!events || events.length === 0) {
+		log('No events fetched, skipping cycle...');
+		return;
+	}
 
-	// IP
 	await refreshServerIPs();
 	const ips = getServerIPs();
 	if (!Array.isArray(ips)) return log(`Invalid IPs array from getServerIPs(): ${ips}`, 3);
@@ -163,9 +166,11 @@ const processData = async () => {
 		for (const event of events) {
 			cycleProcessedCount++;
 
-			if (ips.includes(event.clientIP)) continue;
-			if (whitelist.endpoints.includes(event.clientRequestPath)) continue;
-			if (event.clientRequestPath.length > MAIN.MAX_URL_LENGTH) continue;
+			if (
+				ips.includes(event.clientIP) ||
+				whitelist.endpoints.includes(event.clientRequestPath) ||
+				event.clientRequestPath.length > MAIN.MAX_URL_LENGTH
+			) continue;
 
 			const { recentlyReported } = isIPReportedRecently(event.rayName, event.clientIP, reportedIPs);
 			if (recentlyReported) {
@@ -173,14 +178,12 @@ const processData = async () => {
 				continue;
 			}
 
-			const reported = await reportIP(event, '14', GENERATE_COMMENT(event));
-			if (reported.success === null) continue;
-			if (reported.success) {
+			const result = await reportIP(event, '14', GENERATE_COMMENT(event));
+			await logToCSV(event, result.code);
+
+			if (result.success) {
 				cycleReportedCount++;
-				await logToCSV(event, reported.code);
 				await new Promise(resolve => setTimeout(resolve, MAIN.SUCCESS_COOLDOWN));
-			} else {
-				await logToCSV(event, reported.code);
 			}
 		}
 	} catch (err) {
