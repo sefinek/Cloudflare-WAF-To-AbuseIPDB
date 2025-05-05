@@ -10,7 +10,7 @@ const { refreshServerIPs, getServerIPs } = require('./scripts/services/ipFetcher
 const getFilters = require('./utils/services/getFilters.js');
 const log = require('./scripts/log.js');
 
-const ABUSE_STATE = { isLimited: false, isBuffering: true, sentBulk: false };
+const ABUSE_STATE = { isLimited: false, isBuffering: false, sentBulk: false };
 const RATE_LIMIT_LOG_INTERVAL = 10 * 60 * 1000;
 const BUFFER_STATS_INTERVAL = 5 * 60 * 1000;
 
@@ -142,7 +142,6 @@ let cycleId = 1;
 const processData = async () => {
 	log(`======================== Reporting Cycle No. ${cycleId} ========================`);
 
-	// Fetch cloudflare events
 	const whitelist = await getFilters();
 	const events = await fetchCloudflareEvents(whitelist);
 	if (!events || events.length === 0) {
@@ -156,9 +155,7 @@ const processData = async () => {
 
 	log(`Fetched ${ips.length} of your IP addresses`, 1);
 
-	// Cycle
-	let cycleProcessedCount = 0, cycleReportedCount = 0, cycleSkippedCount = 0;
-	const cycleErrorCounts = { blocked: 0, otherErrors: 0 };
+	let cycleErrorCounts = 0, cycleProcessedCount = 0, cycleReportedCount = 0, cycleSkippedCount = 0;
 
 	try {
 		const reportedIPs = await readReportedIPs();
@@ -170,7 +167,10 @@ const processData = async () => {
 				ips.includes(event.clientIP) ||
 				whitelist.endpoints.includes(event.clientRequestPath) ||
 				event.clientRequestPath.length > MAIN.MAX_URL_LENGTH
-			) continue;
+			) {
+				cycleSkippedCount++;
+				continue;
+			}
 
 			const { recentlyReported } = isIPReportedRecently(event.rayName, event.clientIP, reportedIPs);
 			if (recentlyReported) {
@@ -184,6 +184,19 @@ const processData = async () => {
 			if (result.success) {
 				cycleReportedCount++;
 				await new Promise(resolve => setTimeout(resolve, MAIN.SUCCESS_COOLDOWN));
+			} else {
+				switch (result.code) {
+				case 'FAILED':
+					cycleErrorCounts++;
+					break;
+				case 'ALREADY_IN_BUFFER':
+				case 'READY_FOR_BULK_REPORT':
+				case 'RL_BULK_REPORT':
+					break;
+				default:
+					cycleErrorCounts++;
+					break;
+				}
 			}
 		}
 	} catch (err) {
@@ -193,8 +206,7 @@ const processData = async () => {
 	log(`- Reported IPs: ${cycleReportedCount}`);
 	log(`- Total IPs processed: ${cycleProcessedCount}`);
 	log(`- Skipped IPs: ${cycleSkippedCount}`);
-	log(`- Rate-limits: ${cycleErrorCounts.blocked}`);
-	log(`- Other errors: ${cycleErrorCounts.otherErrors}`);
+	log(`- Errors: ${cycleErrorCounts}`);
 	log('===================== End of Reporting Cycle =====================');
 
 	cycleId++;
