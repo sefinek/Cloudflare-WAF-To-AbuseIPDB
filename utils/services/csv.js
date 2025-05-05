@@ -33,11 +33,11 @@ const escapeCSVValue = value => {
 	return value || '';
 };
 
-const logToCSV = async (rayId, ip, country = 'N/A', hostname, endpoint, userAgent, actionTaken = 'N/A', status = 'N/A', sefinekAPI) => {
+const logToCSV = async ({ rayName, clientIP, clientCountryName, clientRequestHTTPHost, clientRequestPath, userAgent, action }, status = 'N/A', sefinekAPI) => {
 	await ensureCacheDir();
 	await checkCSVSize();
 
-	const logLine = `${new Date().toISOString()},${rayId},${ip},${country},${hostname},${escapeCSVValue(endpoint)},${escapeCSVValue(userAgent)},${actionTaken.toUpperCase()},${status},${sefinekAPI || false}`;
+	const logLine = `${new Date().toISOString()},${rayName},${clientIP},${clientCountryName},${clientRequestHTTPHost},${escapeCSVValue(clientRequestPath)},${escapeCSVValue(userAgent)},${action.toUpperCase()},${status},${sefinekAPI || false}`;
 	try {
 		await fs.appendFile(CSV_FILE_PATH, logLine + '\n');
 	} catch (err) {

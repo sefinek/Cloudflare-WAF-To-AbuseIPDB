@@ -10,7 +10,7 @@ const { refreshServerIPs, getServerIPs } = require('./scripts/services/ipFetcher
 const getFilters = require('./utils/services/getFilters.js');
 const log = require('./scripts/log.js');
 
-const ABUSE_STATE = { isLimited: false, isBuffering: false, sentBulk: false };
+const ABUSE_STATE = { isLimited: false, isBuffering: true, sentBulk: false };
 const RATE_LIMIT_LOG_INTERVAL = 10 * 60 * 1000;
 const BUFFER_STATS_INTERVAL = 5 * 60 * 1000;
 
@@ -87,36 +87,26 @@ const isIPReportedRecently = (rayId, ip, reportedIPs) => {
 	return { recentlyReported: false };
 };
 
-const reportIP = async ({ clientIP: srcIp, clientRequestPath: uri, datetime: timestamp }, categories, comment) => {
-	if (!uri) {
-		log(`Missing URL ${srcIp}; URI: ${uri}`, 2);
-		return { success: false, type: 'MISSING_URI' };
-	}
-
-	if (uri.length > MAIN.MAX_URL_LENGTH) {
-		// log(`URI too long ${srcIp}; Received: ${uri}`);
-		return { success: false, type: 'URI_TOO_LONG' };
-	}
-
+const reportIP = async (event, categories, comment) => {
 	await checkRateLimit();
 
 	if (ABUSE_STATE.isBuffering) {
-		if (BULK_REPORT_BUFFER.has(srcIp)) return;
-		BULK_REPORT_BUFFER.set(srcIp, { categories, timestamp, comment });
+		if (BULK_REPORT_BUFFER.has(event.clientIP)) return { success: null };
+		BULK_REPORT_BUFFER.set(event.clientIP, { categories, timestamp: event.datetime, comment });
 		await saveBufferToFile();
-		log(`Queued ${srcIp} for bulk report (collected ${BULK_REPORT_BUFFER.size} IPs)`, 1);
-		return;
+		log(`Queued ${event.clientIP} for bulk report (collected ${BULK_REPORT_BUFFER.size} IPs)`, 1);
+		return { success: true, code: 'READY_FOR_BULK_REPORT' };
 	}
 
 	try {
 		await axios.post('https://api.abuseipdb.com/api/v2/report', {
-			ip: srcIp,
+			ip: event.clientIP,
 			categories,
 			comment,
 		}, { headers: headers.ABUSEIPDB });
 
-		log(`Reported ${srcIp}; URI: ${uri}`, 1);
-		return true;
+		log(`Reported ${event.clientIP}; URI: ${event.clientRequestPath}`, 1);
+		return { success: true, code: 'REPORTED' };
 	} catch (err) {
 		const status = err.response?.status ?? 'unknown';
 		if (status === 429 && JSON.stringify(err.response?.data || {}).includes('Daily rate limit')) {
@@ -129,19 +119,20 @@ const reportIP = async ({ clientIP: srcIp, clientRequestPath: uri, datetime: tim
 				log(`Daily AbuseIPDB limit reached. Buffering reports until ${RATELIMIT_RESET.toISOString()}`, 0, true);
 			}
 
-			if (BULK_REPORT_BUFFER.has(srcIp)) {
-				log(`${srcIp} is already in buffer, skipping`);
-				return false;
+			if (BULK_REPORT_BUFFER.has(event.clientIP)) {
+				log(`${event.clientIP} is already in buffer, skipping`);
+				return { success: null, code: 'ALREADY_IN_BUFFER' };
 			}
 
-			BULK_REPORT_BUFFER.set(srcIp, { timestamp, categories, comment });
+			BULK_REPORT_BUFFER.set(event.clientIP, { timestamp: event.datetime, categories, comment });
 			await saveBufferToFile();
-			log(`Queued ${srcIp} for bulk report due to rate limit`);
+			log(`Queued ${event.clientIP} for bulk report due to rate limit`);
+			return { success: true, code: 'RL_BULK_REPORT' };
 		} else {
-			log(`Failed to report ${srcIp}; ${err.response?.data?.errors ? JSON.stringify(err.response.data.errors) : err.message}`, status === 429 ? 0 : 3);
+			log(`Failed to report ${event.clientIP}; ${err.response?.data?.errors ? JSON.stringify(err.response.data.errors) : err.message}`, status === 429 ? 0 : 3);
 		}
 
-		return false;
+		return { success: false, code: 'FAILED' };
 	}
 };
 
@@ -158,7 +149,7 @@ const processData = async () => {
 	// IP
 	await refreshServerIPs();
 	const ips = getServerIPs();
-	if (!Array.isArray(ips)) return log(`For some reason, 'ips' from 'getServerIPs()' is not an array. Received: ${ips}`, 3);
+	if (!Array.isArray(ips)) return log(`Invalid IPs array from getServerIPs(): ${ips}`, 3);
 
 	log(`Fetched ${ips.length} of your IP addresses`, 1);
 
@@ -166,31 +157,34 @@ const processData = async () => {
 	let cycleProcessedCount = 0, cycleReportedCount = 0, cycleSkippedCount = 0;
 	const cycleErrorCounts = { blocked: 0, otherErrors: 0 };
 
-	const reportedIPs = await readReportedIPs();
-	for (const event of events) {
-		cycleProcessedCount++;
+	try {
+		const reportedIPs = await readReportedIPs();
 
-		if (ips.includes(event.clientIP)) continue;
+		for (const event of events) {
+			cycleProcessedCount++;
 
-		if (whitelist.endpoints.includes(event.clientRequestPath)) {
-			log(`Skipping ${event.clientRequestPath}...`);
-			continue;
+			if (ips.includes(event.clientIP)) continue;
+			if (whitelist.endpoints.includes(event.clientRequestPath)) continue;
+			if (event.clientRequestPath.length > MAIN.MAX_URL_LENGTH) continue;
+
+			const { recentlyReported } = isIPReportedRecently(event.rayName, event.clientIP, reportedIPs);
+			if (recentlyReported) {
+				cycleSkippedCount++;
+				continue;
+			}
+
+			const reported = await reportIP(event, '14', GENERATE_COMMENT(event));
+			if (reported.success === null) continue;
+			if (reported.success) {
+				cycleReportedCount++;
+				await logToCSV(event, reported.code);
+				await new Promise(resolve => setTimeout(resolve, MAIN.SUCCESS_COOLDOWN));
+			} else {
+				await logToCSV(event, reported.code);
+			}
 		}
-
-		const { recentlyReported } = await isIPReportedRecently(event.rayName, event.clientIP, reportedIPs);
-		if (recentlyReported) {
-			cycleSkippedCount++;
-			continue;
-		}
-
-		const wasReported = await reportIP(event, '14', GENERATE_COMMENT(event));
-		if (wasReported) {
-			cycleReportedCount++;
-			await logToCSV(event.rayName, event.clientIP, event.clientCountryName, event.clientRequestHTTPHost, event.clientRequestPath, event.userAgent, event.action, 'REPORTED');
-			await new Promise(resolve => setTimeout(resolve, MAIN.SUCCESS_COOLDOWN));
-		} else {
-			await logToCSV(event.rayName, event.clientIP, event.clientCountryName, event.clientRequestHTTPHost, event.clientRequestPath, event.userAgent, event.action, 'SUCCESS');
-		}
+	} catch (err) {
+		log(`Failed to process reporting cycle: ${err.message}`, 3, true);
 	}
 
 	log(`- Reported IPs: ${cycleReportedCount}`);
@@ -201,7 +195,6 @@ const processData = async () => {
 	log('===================== End of Reporting Cycle =====================');
 
 	cycleId++;
-	await new Promise(resolve => setTimeout(resolve));
 };
 
 (async () => {
@@ -209,7 +202,6 @@ const processData = async () => {
 
 	// Bulk
 	await loadBufferFromFile();
-
 	if (BULK_REPORT_BUFFER.size > 0 && !ABUSE_STATE.isLimited) {
 		log(`Found ${BULK_REPORT_BUFFER.size} IPs in buffer after restart. Sending bulk report...`);
 		await sendBulkReport();
