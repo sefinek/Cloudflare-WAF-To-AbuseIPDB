@@ -21,6 +21,8 @@
     "axios": "^1.9.0",
     "axios-retry": "^4.5.0",
     "cron": "^4.3.0",
+    "csv-parse": "^5.6.0",
+    "csv-stringify": "^6.5.2",
     "ipaddr.js": "^2.2.0"
   },
   "devDependencies": {

@@ -2,7 +2,7 @@ const axios = require('./../../scripts/services/axios.js');
 const { readReportedIPs, updateSefinekAPIInCSV } = require('./csv.js');
 const log = require('../../scripts/log.js');
 const { getServerIPs } = require('./../../scripts/services/ipFetcher.js');
-const { SEFINEK_API } = require('../../config.js').CONFIG;
+const { SEFINEK_API } = require('../../config.js').MAIN;
 
 module.exports = async () => {
 	const reportedIPs = (readReportedIPs() || []).filter(x => x.status === 'REPORTED' && !getServerIPs().includes(x.ip) && !x.sefinekAPI);

@@ -1,13 +1,45 @@
 const { CronJob } = require('cron');
 const axios = require('./scripts/services/axios.js');
-const { CONFIG, GENERATE_COMMENT } = require('./config.js');
+const { MAIN, GENERATE_COMMENT } = require('./config.js');
 const PAYLOAD = require('./utils/services/payload.js');
+const { saveBufferToFile, loadBufferFromFile, sendBulkReport, BULK_REPORT_BUFFER } = require('./scripts/services/bulk.js');
 const SefinekAPI = require('./utils/services/SefinekAPI.js');
 const headers = require('./utils/headers.js');
 const { logToCSV, readReportedIPs } = require('./utils/services/csv.js');
 const { refreshServerIPs, getServerIPs } = require('./scripts/services/ipFetcher.js');
 const getFilters = require('./utils/services/getFilters.js');
 const log = require('./scripts/log.js');
+
+const ABUSE_STATE = { isLimited: false, isBuffering: true, sentBulk: false };
+const RATE_LIMIT_LOG_INTERVAL = 10 * 60 * 1000;
+const BUFFER_STATS_INTERVAL = 5 * 60 * 1000;
+
+const nextRateLimitReset = () => {
+	const now = new Date();
+	return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 1));
+};
+
+let LAST_RATELIMIT_LOG = 0, LAST_STATS_LOG = 0, RATELIMIT_RESET = nextRateLimitReset();
+
+const checkRateLimit = async () => {
+	const now = Date.now();
+	if (now - LAST_STATS_LOG >= BUFFER_STATS_INTERVAL && BULK_REPORT_BUFFER.size > 0) LAST_STATS_LOG = now;
+
+	if (ABUSE_STATE.isLimited) {
+		if (now >= RATELIMIT_RESET.getTime()) {
+			ABUSE_STATE.isLimited = false;
+			ABUSE_STATE.isBuffering = false;
+			if (!ABUSE_STATE.sentBulk && BULK_REPORT_BUFFER.size > 0) await sendBulkReport();
+			RATELIMIT_RESET = nextRateLimitReset();
+			ABUSE_STATE.sentBulk = false;
+			log(`Rate limit reset. Next reset scheduled at ${RATELIMIT_RESET.toISOString()}`, 1);
+		} else if (now - LAST_RATELIMIT_LOG >= RATE_LIMIT_LOG_INTERVAL) {
+			const minutesLeft = Math.ceil((RATELIMIT_RESET.getTime() - now) / 60000);
+			log(`Rate limit is still active. Collected ${BULK_REPORT_BUFFER.size} IPs. Waiting for reset in ${minutesLeft} minute(s) (${RATELIMIT_RESET.toISOString()})`, 1);
+			LAST_RATELIMIT_LOG = now;
+		}
+	}
+};
 
 const fetchCloudflareEvents = async whitelist => {
 	try {
@@ -48,55 +80,70 @@ const isIPReportedRecently = (rayId, ip, reportedIPs) => {
 		return latest;
 	}, null);
 
-	if (lastReport && (Date.now() - lastReport.timestamp) < CONFIG.CYCLES.REPORTED_IP_COOLDOWN) {
+	if (lastReport && (Date.now() - lastReport.timestamp) < MAIN.REPORTED_IP_COOLDOWN) {
 		return { recentlyReported: true, timeDifference: Date.now() - lastReport.timestamp, reason: lastReport.status === 'TOO_MANY_REQUESTS' ? 'RATE-LIMITED' : 'REPORTED' };
 	}
 
 	return { recentlyReported: false };
 };
 
-const reportIP = async (event, uri, country, hostname, endpoint, cycleErrorCounts) => {
+const reportIP = async ({ clientIP: srcIp, clientRequestPath: uri, datetime: timestamp }, categories, comment) => {
 	if (!uri) {
-		logToCSV(event.rayName, event.clientIP, country, hostname, endpoint, event.userAgent, event.action, 'MISSING_URI');
-		log(`Missing URL ${event.clientIP}; URI: ${uri}`, 2);
-		return false;
+		log(`Missing URL ${srcIp}; URI: ${uri}`, 2);
+		return { success: false, type: 'MISSING_URI' };
 	}
 
-	if (getServerIPs().includes(event.clientIP)) {
-		logToCSV(event.rayName, event.clientIP, country, hostname, endpoint, event.userAgent, event.action, 'YOUR_IP_ADDRESS');
-		log(`Your IP address (${event.clientIP}) was unexpectedly received from Cloudflare. URI: ${uri}`);
-		return false;
+	if (getServerIPs().includes(srcIp)) {
+		log(`Your IP address (${srcIp}) was unexpectedly received from Cloudflare. URI: ${uri}`);
+		return { success: false, type: 'YOUR_IP_ADDRESS' };
 	}
 
-	if (uri.length > CONFIG.CYCLES.MAX_URL_LENGTH) {
-		logToCSV(event.rayName, event.clientIP, country, hostname, endpoint, event.userAgent, event.action, 'URI_TOO_LONG');
-		// log(`URI too long ${event.clientIP}; Received: ${uri}`);
-		return false;
+	if (uri.length > MAIN.MAX_URL_LENGTH) {
+		// log(`URI too long ${srcIp}; Received: ${uri}`);
+		return { success: false, type: 'URI_TOO_LONG' };
+	}
+
+	await checkRateLimit();
+
+	if (ABUSE_STATE.isBuffering) {
+		if (BULK_REPORT_BUFFER.has(srcIp)) return;
+		BULK_REPORT_BUFFER.set(srcIp, { categories, timestamp, comment });
+		await saveBufferToFile();
+		log(`Queued ${srcIp} for bulk report (collected ${BULK_REPORT_BUFFER.size} IPs)`, 1);
+		return;
 	}
 
 	try {
 		await axios.post('https://api.abuseipdb.com/api/v2/report', {
-			ip: event.clientIP,
+			ip: srcIp,
 			categories: '19',
-			comment: GENERATE_COMMENT(event),
+			comment,
 		}, { headers: headers.ABUSEIPDB });
 
-		logToCSV(event.rayName, event.clientIP, country, hostname, endpoint, event.userAgent, event.action, 'REPORTED');
-		log(`Reported ${event.clientIP}; URI: ${uri}`, 1);
-
+		log(`Reported ${srcIp}; URI: ${uri}`, 1);
 		return true;
 	} catch (err) {
-		if (err.response?.status === 429) {
-			logToCSV(event.rayName, event.clientIP, country, hostname, endpoint, event.userAgent, event.action, 'TOO_MANY_REQUESTS');
-			log(`429 for ${event.clientIP} (${event.rayName}); Endpoint: ${endpoint}`);
-			cycleErrorCounts.blocked++;
-		} else {
-			const errorDetails = Array.isArray(err.response?.data?.errors) && err.response.data.errors.length > 0
-				? err.response.data.errors[0]?.detail
-				: JSON.stringify(err.response?.data) || err.message || 'Unknown error';
-			log(`Error ${err.response?.status} while reporting ${event?.clientIP}; URI: ${uri}; ${errorDetails}`, 3);
+		const status = err.response?.status ?? 'unknown';
+		if (status === 429 && JSON.stringify(err.response?.data || {}).includes('Daily rate limit')) {
+			if (!ABUSE_STATE.isLimited) {
+				ABUSE_STATE.isLimited = true;
+				ABUSE_STATE.isBuffering = true;
+				ABUSE_STATE.sentBulk = false;
+				LAST_RATELIMIT_LOG = Date.now();
+				RATELIMIT_RESET = nextRateLimitReset();
+				log(`Daily AbuseIPDB limit reached. Buffering reports until ${RATELIMIT_RESET.toISOString()}`, 0, true);
+			}
 
-			cycleErrorCounts.otherErrors++;
+			if (BULK_REPORT_BUFFER.has(srcIp)) {
+				log(`${srcIp} is already in buffer, skipping`);
+				return false;
+			}
+
+			BULK_REPORT_BUFFER.set(srcIp, { timestamp: new Date(), categories: '14', comment });
+			await saveBufferToFile();
+			log(`Queued ${srcIp} for bulk report due to rate limit`);
+		} else {
+			log(`Failed to report ${srcIp}; ${err.response?.data?.errors ? JSON.stringify(err.response.data.errors) : err.message}`, status === 429 ? 0 : 3);
 		}
 
 		return false;
@@ -105,7 +152,7 @@ const reportIP = async (event, uri, country, hostname, endpoint, cycleErrorCount
 
 let cycleId = 1;
 
-const cron = async () => {
+const processData = async () => {
 	log(`======================== Reporting Cycle No. ${cycleId} ========================`);
 
 	// Fetch cloudflare events
@@ -116,7 +163,8 @@ const cron = async () => {
 	// IP
 	await refreshServerIPs();
 	const ips = getServerIPs();
-	if (!Array.isArray(ips)) return log('For some reason, \'ips\' is not an array', 3);
+	if (!Array.isArray(ips)) return log(`For some reason, 'ips' from 'getServerIPs()' is not an array. Received: ${ips}`, 3);
+
 	log(`Fetched ${getServerIPs()?.length} of your IP addresses`, 1);
 
 	// Cycle
@@ -125,12 +173,6 @@ const cron = async () => {
 
 	for (const event of events) {
 		cycleProcessedCount++;
-		const ip = event.clientIP;
-		if (getServerIPs().includes(ip)) {
-			log(`The IP address ${ip} belongs to this machine. Ignoring...`);
-			cycleSkippedCount++;
-			continue;
-		}
 
 		if (whitelist.endpoints.includes(event.clientRequestPath)) {
 			log(`Skipping ${event.clientRequestPath}...`);
@@ -138,16 +180,19 @@ const cron = async () => {
 		}
 
 		const reportedIPs = readReportedIPs();
-		const { recentlyReported } = isIPReportedRecently(event.rayName, ip, reportedIPs);
+		const { recentlyReported } = await isIPReportedRecently(event.rayName, event.clientIP, reportedIPs);
 		if (recentlyReported) {
 			cycleSkippedCount++;
 			continue;
 		}
 
-		const wasReported = await reportIP(event, `${event.clientRequestHTTPHost}${event.clientRequestPath}`, event.clientCountryName, event.clientRequestHTTPHost, event.clientRequestPath, cycleErrorCounts);
+		const wasReported = await reportIP(event, '14', GENERATE_COMMENT(event));
 		if (wasReported) {
 			cycleReportedCount++;
-			await new Promise(resolve => setTimeout(resolve, CONFIG.CYCLES.SUCCESS_COOLDOWN));
+			await logToCSV(event.rayName, event.clientIP, event.clientCountryName, event.clientRequestHTTPHost, event.clientRequestPath, event.userAgent, event.action, 'REPORTED');
+			await new Promise(resolve => setTimeout(resolve, MAIN.SUCCESS_COOLDOWN));
+		} else {
+			await logToCSV(event.rayName, event.clientIP, event.clientCountryName, event.clientRequestHTTPHost, event.clientRequestPath, event.userAgent, event.action, 'SUCCESS');
 		}
 	}
 
@@ -165,17 +210,25 @@ const cron = async () => {
 (async () => {
 	log('Loading data, please wait...');
 
+	// Bulk
+	await loadBufferFromFile();
+
+	if (BULK_REPORT_BUFFER.size > 0 && !ABUSE_STATE.isLimited) {
+		log(`Found ${BULK_REPORT_BUFFER.size} IPs in buffer after restart. Sending bulk report...`);
+		await sendBulkReport();
+	}
+
 	// Sefinek API
-	if (CONFIG.SEFINEK_API.ENABLED && CONFIG.SEFINEK_API.SECRET_TOKEN && CONFIG.SEFINEK_API.REPORT_SCHEDULE) {
-		new CronJob(CONFIG.SEFINEK_API.REPORT_SCHEDULE, SefinekAPI, null, true);
+	if (MAIN.SEFIN_API_REPORTING && MAIN.SEFIN_API_SECRET_TOKEN && MAIN.SEFIN_API_REPORT_SCHEDULE) {
+		new CronJob(MAIN.SEFIN_API_REPORT_SCHEDULE, SefinekAPI, null, true);
 	}
 
 	// AbuseIPDB
-	new CronJob(CONFIG.CYCLES.REPORT_SCHEDULE, cron, null, true);
+	new CronJob(MAIN.REPORT_SCHEDULE, processData, null, true);
 
 	// Ready
-	process.send && process.send('ready');
+	process.send?.('ready');
 
 	// Run on start?
-	if (CONFIG.MAIN.RUN_ON_START) await cron();
+	if (MAIN.RUN_ON_START) await processData();
 })();
