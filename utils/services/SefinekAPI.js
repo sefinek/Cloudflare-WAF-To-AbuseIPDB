@@ -5,7 +5,7 @@ const { getServerIPs } = require('./../../scripts/services/ipFetcher.js');
 const { SEFINEK_API } = require('../../config.js').MAIN;
 
 module.exports = async () => {
-	const reportedIPs = (readReportedIPs() || []).filter(x => x.status === 'REPORTED' && !getServerIPs().includes(x.ip) && !x.sefinekAPI);
+	const reportedIPs = (await readReportedIPs() || []).filter(x => x.status === 'REPORTED' && !getServerIPs().includes(x.ip) && !x.sefinekAPI);
 	if (!reportedIPs.length) return log('Sefinek API: No data to report');
 
 	const seenIPs = new Set();
@@ -33,7 +33,9 @@ module.exports = async () => {
 
 		log(`Sefinek API: Successfully sent ${uniqueLogs.length} logs! Status: ${res.status}`, 1);
 
-		uniqueLogs.forEach(ip => updateSefinekAPIInCSV(ip.rayId, true));
+		for (const ip of uniqueLogs) {
+			await updateSefinekAPIInCSV(ip.rayId, true);
+		}
 	} catch (err) {
 		if (!err.response?.data?.message?.includes('No valid or unique')) {
 			const msg = err.response?.data?.message[0] || err.response?.data?.message || err.message;
