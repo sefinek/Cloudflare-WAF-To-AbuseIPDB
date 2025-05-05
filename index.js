@@ -95,7 +95,7 @@ const reportIP = async (event, categories, comment) => {
 		BULK_REPORT_BUFFER.set(event.clientIP, { categories, timestamp: event.datetime, comment });
 		await saveBufferToFile();
 		log(`Queued ${event.clientIP} for bulk report (collected ${BULK_REPORT_BUFFER.size} IPs)`, 1);
-		return { success: true, code: 'READY_FOR_BULK_REPORT' };
+		return { success: false, code: 'READY_FOR_BULK_REPORT' };
 	}
 
 	try {
@@ -127,7 +127,7 @@ const reportIP = async (event, categories, comment) => {
 			BULK_REPORT_BUFFER.set(event.clientIP, { timestamp: event.datetime, categories, comment });
 			await saveBufferToFile();
 			log(`Queued ${event.clientIP} for bulk report due to rate limit`);
-			return { success: true, code: 'RL_BULK_REPORT' };
+			return { success: false, code: 'RL_BULK_REPORT' };
 		} else {
 			log(`Failed to report ${event.clientIP}; ${err.response?.data?.errors ? JSON.stringify(err.response.data.errors) : err.message}`, status === 429 ? 0 : 3);
 		}
