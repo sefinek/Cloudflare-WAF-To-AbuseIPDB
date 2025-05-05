@@ -74,7 +74,7 @@ const isIPReportedRecently = (rayId, ip, reportedIPs) => {
 	const lastReport = reportedIPs.reduce((latest, entry) => {
 		if (
 			(entry.rayId === rayId || entry.ip === ip) &&
-			(entry.status === 'TOO_MANY_REQUESTS' || entry.status === 'REPORTED') &&
+			(entry.status === 'TOO_MANY_REQUESTS' || entry.status === 'REPORTED' || entry.status === 'READY_FOR_BULK_REPORT' || entry.status === 'RL_BULK_REPORT') &&
 			(!latest || entry.timestamp > latest.timestamp)
 		) return entry;
 		return latest;
