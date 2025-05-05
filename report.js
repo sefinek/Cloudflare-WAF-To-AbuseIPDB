@@ -1,8 +1,8 @@
 const fs = require('node:fs');
-const PAYLOAD = require('./services/payload.js');
-const axios = require('./services/axios.js');
+const PAYLOAD = require('./utils/services/payload.js');
+const axios = require('./scripts/services/axios.js');
 const headers = require('./utils/headers.js');
-const log = require('./utils/log.js');
+const log = require('./scripts/log.js');
 
 const fetchCloudflareEvents = async () => {
 	try {
@@ -14,10 +14,10 @@ const fetchCloudflareEvents = async () => {
 		if (!events) throw new Error(`Failed to retrieve data from Cloudflare (status ${status}): ${JSON.stringify(data?.errors)}`);
 
 		const filtered = events.filter(event => event.source === 'l7ddos');
-		log(0, `Fetched ${events.length} events (filtered ${filtered.length} L7 DDoS)`);
+		log(`Fetched ${events.length} events (filtered ${filtered.length} L7 DDoS)`, 1);
 		return filtered;
 	} catch (err) {
-		log(2, `Unknown error with Cloudflare API: ${err.message}`);
+		log(`Unknown error with Cloudflare API: ${err.message}`, 3);
 		return [];
 	}
 };

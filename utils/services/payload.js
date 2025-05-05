@@ -1,4 +1,4 @@
-const { MAIN } = require('../config.js').CONFIG;
+const { MAIN } = require('../../config.js').CONFIG;
 
 module.exports = limit => {
 	const variables = {

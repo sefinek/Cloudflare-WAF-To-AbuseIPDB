@@ -1,13 +1,13 @@
 const { CronJob } = require('cron');
-const axios = require('./services/axios.js');
+const axios = require('./scripts/services/axios.js');
 const { CONFIG, GENERATE_COMMENT } = require('./config.js');
-const PAYLOAD = require('./services/payload.js');
-const SefinekAPI = require('./services/SefinekAPI.js');
+const PAYLOAD = require('./utils/services/payload.js');
+const SefinekAPI = require('./utils/services/SefinekAPI.js');
 const headers = require('./utils/headers.js');
-const { logToCSV, readReportedIPs } = require('./services/csv.js');
-const { refreshServerIPs, getServerIPs } = require('./services/ipFetcher.js');
-const getFilters = require('./services/getFilters.js');
-const log = require('./utils/log.js');
+const { logToCSV, readReportedIPs } = require('./utils/services/csv.js');
+const { refreshServerIPs, getServerIPs } = require('./scripts/services/ipFetcher.js');
+const getFilters = require('./utils/services/getFilters.js');
+const log = require('./scripts/log.js');
 
 const fetchCloudflareEvents = async whitelist => {
 	try {
@@ -27,12 +27,12 @@ const fetchCloudflareEvents = async whitelist => {
 
 		const filtered = events.filter(event => !isWhitelisted(event));
 
-		log(0, `Fetched ${events.length} events (filtered ${filtered.length}) from Cloudflare`);
+		log(`Fetched ${events.length} events (filtered ${filtered.length}) from Cloudflare`, 1);
 		return filtered;
 	} catch (err) {
-		log(2, err.response?.data
+		log(err.response?.data
 			? `${err.response.status} HTTP ERROR Cloudflare API: ${JSON.stringify(err.response.data, null, 2)}`
-			: `Unknown error with Cloudflare API: ${err.message}`
+			: `Unknown error with Cloudflare API: ${err.message}`, 3
 		);
 		return [];
 	}
@@ -58,19 +58,19 @@ const isIPReportedRecently = (rayId, ip, reportedIPs) => {
 const reportIP = async (event, uri, country, hostname, endpoint, cycleErrorCounts) => {
 	if (!uri) {
 		logToCSV(event.rayName, event.clientIP, country, hostname, endpoint, event.userAgent, event.action, 'MISSING_URI');
-		log(1, `Missing URL ${event.clientIP}; URI: ${uri}`);
+		log(`Missing URL ${event.clientIP}; URI: ${uri}`, 2);
 		return false;
 	}
 
 	if (getServerIPs().includes(event.clientIP)) {
 		logToCSV(event.rayName, event.clientIP, country, hostname, endpoint, event.userAgent, event.action, 'YOUR_IP_ADDRESS');
-		log(0, `Your IP address (${event.clientIP}) was unexpectedly received from Cloudflare. URI: ${uri}`);
+		log(`Your IP address (${event.clientIP}) was unexpectedly received from Cloudflare. URI: ${uri}`);
 		return false;
 	}
 
 	if (uri.length > CONFIG.CYCLES.MAX_URL_LENGTH) {
 		logToCSV(event.rayName, event.clientIP, country, hostname, endpoint, event.userAgent, event.action, 'URI_TOO_LONG');
-		// log(0, `URI too long ${event.clientIP}; Received: ${uri}`);
+		// log(`URI too long ${event.clientIP}; Received: ${uri}`);
 		return false;
 	}
 
@@ -82,19 +82,19 @@ const reportIP = async (event, uri, country, hostname, endpoint, cycleErrorCount
 		}, { headers: headers.ABUSEIPDB });
 
 		logToCSV(event.rayName, event.clientIP, country, hostname, endpoint, event.userAgent, event.action, 'REPORTED');
-		log(0, `Reported ${event.clientIP}; URI: ${uri}`);
+		log(`Reported ${event.clientIP}; URI: ${uri}`, 1);
 
 		return true;
 	} catch (err) {
 		if (err.response?.status === 429) {
 			logToCSV(event.rayName, event.clientIP, country, hostname, endpoint, event.userAgent, event.action, 'TOO_MANY_REQUESTS');
-			log(0, `429 for ${event.clientIP} (${event.rayName}); Endpoint: ${endpoint}`);
+			log(`429 for ${event.clientIP} (${event.rayName}); Endpoint: ${endpoint}`);
 			cycleErrorCounts.blocked++;
 		} else {
 			const errorDetails = Array.isArray(err.response?.data?.errors) && err.response.data.errors.length > 0
 				? err.response.data.errors[0]?.detail
 				: JSON.stringify(err.response?.data) || err.message || 'Unknown error';
-			log(2, `Error ${err.response?.status} while reporting ${event?.clientIP}; URI: ${uri}; ${errorDetails}`);
+			log(`Error ${err.response?.status} while reporting ${event?.clientIP}; URI: ${uri}; ${errorDetails}`, 3);
 
 			cycleErrorCounts.otherErrors++;
 		}
@@ -106,18 +106,18 @@ const reportIP = async (event, uri, country, hostname, endpoint, cycleErrorCount
 let cycleId = 1;
 
 const cron = async () => {
-	log(0, `======================== Reporting Cycle No. ${cycleId} ========================`);
+	log(`======================== Reporting Cycle No. ${cycleId} ========================`);
 
 	// Fetch cloudflare events
 	const whitelist = await getFilters();
 	const events = await fetchCloudflareEvents(whitelist);
-	if (!events) return log(1, 'No events fetched, skipping cycle...');
+	if (!events) return log('No events fetched, skipping cycle...');
 
 	// IP
 	await refreshServerIPs();
 	const ips = getServerIPs();
-	if (!Array.isArray(ips)) return log(2, 'For some reason, \'ips\' is not an array');
-	log(0, `Fetched ${getServerIPs()?.length} of your IP addresses`);
+	if (!Array.isArray(ips)) return log('For some reason, \'ips\' is not an array', 3);
+	log(`Fetched ${getServerIPs()?.length} of your IP addresses`, 1);
 
 	// Cycle
 	let cycleProcessedCount = 0, cycleReportedCount = 0, cycleSkippedCount = 0;
@@ -127,13 +127,13 @@ const cron = async () => {
 		cycleProcessedCount++;
 		const ip = event.clientIP;
 		if (getServerIPs().includes(ip)) {
-			log(0, `The IP address ${ip} belongs to this machine. Ignoring...`);
+			log(`The IP address ${ip} belongs to this machine. Ignoring...`);
 			cycleSkippedCount++;
 			continue;
 		}
 
 		if (whitelist.endpoints.includes(event.clientRequestPath)) {
-			log(0, `Skipping ${event.clientRequestPath}...`);
+			log(`Skipping ${event.clientRequestPath}...`);
 			continue;
 		}
 
@@ -151,19 +151,19 @@ const cron = async () => {
 		}
 	}
 
-	log(0, `- Reported IPs: ${cycleReportedCount}`);
-	log(0, `- Total IPs processed: ${cycleProcessedCount}`);
-	log(0, `- Skipped IPs: ${cycleSkippedCount}`);
-	log(0, `- Rate-limits: ${cycleErrorCounts.blocked}`);
-	log(0, `- Other errors: ${cycleErrorCounts.otherErrors}`);
-	log(0, '===================== End of Reporting Cycle =====================');
+	log(`- Reported IPs: ${cycleReportedCount}`);
+	log(`- Total IPs processed: ${cycleProcessedCount}`);
+	log(`- Skipped IPs: ${cycleSkippedCount}`);
+	log(`- Rate-limits: ${cycleErrorCounts.blocked}`);
+	log(`- Other errors: ${cycleErrorCounts.otherErrors}`);
+	log('===================== End of Reporting Cycle =====================');
 
 	cycleId++;
 	await new Promise(resolve => setTimeout(resolve));
 };
 
 (async () => {
-	log(0, 'Loading data, please wait...');
+	log('Loading data, please wait...');
 
 	// Sefinek API
 	if (CONFIG.SEFINEK_API.ENABLED && CONFIG.SEFINEK_API.SECRET_TOKEN && CONFIG.SEFINEK_API.REPORT_SCHEDULE) {
