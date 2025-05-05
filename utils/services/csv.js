@@ -7,11 +7,16 @@ const CSV_FILE_PATH = path.join(__dirname, '..', '..', 'tmp', 'reported_ips.csv'
 const MAX_CSV_SIZE_BYTES = 4 * 1024 * 1024; // 4 MB
 const CSV_HEADER = 'Timestamp,CF RayID,IP,Country,Hostname,Endpoint,User-Agent,Action taken,Status,Sefinek API\n';
 
-const ensureCacheDir = async () => {
+const initializeTmpFile = async () => {
 	try {
 		await fs.access(CSV_FILE_PATH);
 	} catch (err) {
-		if (err.code === 'ENOENT') return;
+		if (err.code === 'ENOENT') {
+			await fs.mkdir(path.dirname(CSV_FILE_PATH), { recursive: true });
+			await fs.writeFile(CSV_FILE_PATH, CSV_HEADER);
+			log(`Created missing CSV file: ${CSV_FILE_PATH}`, 1);
+			return;
+		}
 		throw err;
 	}
 };
@@ -34,7 +39,7 @@ const escapeCSVValue = value => {
 };
 
 const logToCSV = async ({ rayName, clientIP, clientCountryName, clientRequestHTTPHost, clientRequestPath, userAgent, action }, status = 'N/A', sefinekAPI) => {
-	await ensureCacheDir();
+	await initializeTmpFile();
 	await checkCSVSize();
 
 	const logLine = `${new Date().toISOString()},${rayName},${clientIP},${clientCountryName},${clientRequestHTTPHost},${escapeCSVValue(clientRequestPath)},${escapeCSVValue(userAgent)},${action.toUpperCase()},${status},${sefinekAPI || false}`;
