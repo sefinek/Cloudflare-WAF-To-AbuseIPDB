@@ -10,7 +10,8 @@ Also, take a look at [sefinek/UFW-AbuseIPDB-Reporter](https://github.com/sefinek
 ## 🛠️ Prerequisites
 - [Node.js + npm](https://nodejs.org)
 - [PM2](https://www.npmjs.com/package/pm2) (recommended)
-
+- [Git](https://github.com/sefinek/UFW-AbuseIPDB-Reporter?tab=readme-ov-file#git-installation)
+- Linux or Windows Server
 
 ## 📃 Information
 If you want to make changes to the script from this repository, please kindly [fork](https://github.com/sefinek/Cloudflare-WAF-To-AbuseIPDB/fork) it first.
@@ -39,11 +40,11 @@ https://github.com/sefinek/Cloudflare-WAF-To-AbuseIPDB
 ## 📥 Installation
 1. Clone the repository.
    ```bash
-   git clone https://github.com/sefinek/Cloudflare-WAF-To-AbuseIPDB.git
+   git clone --recurse-submodules https://github.com/sefinek/Cloudflare-WAF-To-AbuseIPDB.git 
    ```
 2. Install dependencies.
    ```bash
-   npm install
+   cd Cloudflare-WAF-To-AbuseIPDB && npm install
    ```
 3. Create a new configuration file.
    ```bash

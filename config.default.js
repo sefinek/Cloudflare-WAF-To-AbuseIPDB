@@ -15,8 +15,7 @@ exports.MAIN = {
 	// The required time is >= 15 minutes, according to AbuseIPDB API limits.
 	REPORTED_IP_COOLDOWN: 6 * 60 * 60 * 1000,
 
-	// The maximum URI length that can be reported to AbuseIPDB.
-	// If Cloudflare returns a longer URI, the API request will fail.
+	// The maximum URI length that can be reported to AbuseIPDB. If Cloudflare returns a longer URI, the API request will fail.
 	MAX_URL_LENGTH: 800,
 
 	// Additional delay (in milliseconds) after each successful IP report to avoid overloading the AbuseIPDB API.
