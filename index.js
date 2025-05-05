@@ -10,7 +10,7 @@ const { refreshServerIPs, getServerIPs } = require('./scripts/services/ipFetcher
 const getFilters = require('./utils/services/getFilters.js');
 const log = require('./scripts/log.js');
 
-const ABUSE_STATE = { isLimited: false, isBuffering: true, sentBulk: false };
+const ABUSE_STATE = { isLimited: false, isBuffering: false, sentBulk: false };
 const RATE_LIMIT_LOG_INTERVAL = 10 * 60 * 1000;
 const BUFFER_STATS_INTERVAL = 5 * 60 * 1000;
 
@@ -93,11 +93,6 @@ const reportIP = async ({ clientIP: srcIp, clientRequestPath: uri, datetime: tim
 		return { success: false, type: 'MISSING_URI' };
 	}
 
-	if (getServerIPs().includes(srcIp)) {
-		log(`Your IP address (${srcIp}) was unexpectedly received from Cloudflare. URI: ${uri}`);
-		return { success: false, type: 'YOUR_IP_ADDRESS' };
-	}
-
 	if (uri.length > MAIN.MAX_URL_LENGTH) {
 		// log(`URI too long ${srcIp}; Received: ${uri}`);
 		return { success: false, type: 'URI_TOO_LONG' };
@@ -116,7 +111,7 @@ const reportIP = async ({ clientIP: srcIp, clientRequestPath: uri, datetime: tim
 	try {
 		await axios.post('https://api.abuseipdb.com/api/v2/report', {
 			ip: srcIp,
-			categories: '19',
+			categories,
 			comment,
 		}, { headers: headers.ABUSEIPDB });
 
@@ -139,7 +134,7 @@ const reportIP = async ({ clientIP: srcIp, clientRequestPath: uri, datetime: tim
 				return false;
 			}
 
-			BULK_REPORT_BUFFER.set(srcIp, { timestamp: new Date(), categories: '14', comment });
+			BULK_REPORT_BUFFER.set(srcIp, { timestamp, categories, comment });
 			await saveBufferToFile();
 			log(`Queued ${srcIp} for bulk report due to rate limit`);
 		} else {
@@ -165,21 +160,23 @@ const processData = async () => {
 	const ips = getServerIPs();
 	if (!Array.isArray(ips)) return log(`For some reason, 'ips' from 'getServerIPs()' is not an array. Received: ${ips}`, 3);
 
-	log(`Fetched ${getServerIPs()?.length} of your IP addresses`, 1);
+	log(`Fetched ${ips.length} of your IP addresses`, 1);
 
 	// Cycle
 	let cycleProcessedCount = 0, cycleReportedCount = 0, cycleSkippedCount = 0;
 	const cycleErrorCounts = { blocked: 0, otherErrors: 0 };
 
+	const reportedIPs = await readReportedIPs();
 	for (const event of events) {
 		cycleProcessedCount++;
+
+		if (ips.includes(event.clientIP)) continue;
 
 		if (whitelist.endpoints.includes(event.clientRequestPath)) {
 			log(`Skipping ${event.clientRequestPath}...`);
 			continue;
 		}
 
-		const reportedIPs = readReportedIPs();
 		const { recentlyReported } = await isIPReportedRecently(event.rayName, event.clientIP, reportedIPs);
 		if (recentlyReported) {
 			cycleSkippedCount++;

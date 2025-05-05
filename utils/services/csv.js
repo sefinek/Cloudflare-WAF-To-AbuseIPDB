@@ -2,23 +2,17 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const { existsSync } = require('node:fs');
 const log = require('../../scripts/log.js');
-const { dirname } = require('node:path');
 
 const CSV_FILE_PATH = path.join(__dirname, '..', '..', 'tmp', 'reported_ips.csv');
 const MAX_CSV_SIZE_BYTES = 4 * 1024 * 1024; // 4 MB
 const CSV_HEADER = 'Timestamp,CF RayID,IP,Country,Hostname,Endpoint,User-Agent,Action taken,Status,Sefinek API\n';
 
 const ensureCacheDir = async () => {
-	const dir = dirname(CSV_FILE_PATH);
 	try {
-		await fs.access(dir);
+		await fs.access(CSV_FILE_PATH);
 	} catch (err) {
-		if (err.code === 'ENOENT') {
-			await fs.mkdir(dir, { recursive: true });
-			log(`Created cache directory: ${dir}`, 1);
-		} else {
-			log(`Failed to access cache directory: ${err.message}`, 3);
-		}
+		if (err.code === 'ENOENT') return;
+		throw err;
 	}
 };
 
