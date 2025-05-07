@@ -122,14 +122,15 @@ const reportIP = async (event, categories, comment) => {
 
 const knownStatuses = new Set(['TOO_MANY_REQUESTS', 'REPORTED', 'READY_FOR_BULK_REPORT', 'RL_BULK_REPORT']);
 const isIPReportedRecently = (event, reportedIPs) => {
-	const lastReport = reportedIPs.reduce((latest, entry) => {
-		if ((entry.rayId === event.rayName || entry.ip === event.clientIP) && knownStatuses.has(entry.status) && (!latest || entry.timestamp > latest.timestamp)) return entry;
-		console.log(latest);
-		return latest;
-	}, null);
-
-	if (lastReport && (Date.now() - lastReport.timestamp) < MAIN.REPORTED_IP_COOLDOWN) {
-		return { recentlyReported: true, reason: lastReport.status };
+	const now = Date.now();
+	for (const entry of reportedIPs) {
+		if (
+			(entry.ip === event.clientIP || entry.rayId === event.rayName) &&
+			knownStatuses.has(entry.status) &&
+			(now - entry.timestamp) < MAIN.REPORTED_IP_COOLDOWN
+		) {
+			return { recentlyReported: true, reason: entry.status };
+		}
 	}
 
 	return { recentlyReported: false };
@@ -155,6 +156,7 @@ const processData = async () => {
 
 	try {
 		const reportedIPs = await readReportedIPs();
+		const sessionReportedIPs = new Set(reportedIPs.map(e => e.ip));
 
 		for (const event of events) {
 			cycleProcessedCount++;
@@ -168,6 +170,11 @@ const processData = async () => {
 				continue;
 			}
 
+			if (sessionReportedIPs.has(event.clientIP)) {
+				cycleSkippedCount++;
+				continue;
+			}
+
 			const { recentlyReported } = isIPReportedRecently(event, reportedIPs);
 			if (recentlyReported) {
 				cycleSkippedCount++;
@@ -176,6 +183,10 @@ const processData = async () => {
 
 			const result = await reportIP(event, '14', GENERATE_COMMENT(event));
 			await logToCSV(event, result.code);
+
+			if (['REPORTED', 'RL_BULK_REPORT', 'READY_FOR_BULK_REPORT'].includes(result.code)) {
+				sessionReportedIPs.add(event.clientIP);
+			}
 
 			if (result.success) {
 				cycleReportedCount++;
@@ -194,6 +205,7 @@ const processData = async () => {
 					break;
 				}
 			}
+
 		}
 	} catch (err) {
 		log(err.stack, 3, true);
