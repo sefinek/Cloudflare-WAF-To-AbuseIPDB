@@ -138,6 +138,7 @@ const processData = async () => {
 		readReportedIPs(),
 	]);
 
+	const reportedIPsSet = new Set(reportedIPs.map(e => e.ip));
 	const events = await fetchCloudflareEvents(whitelist);
 	if (!events?.length) {
 		log('No events fetched, skipping cycle...');
@@ -153,34 +154,19 @@ const processData = async () => {
 
 	log(`Fetched ${ips.length} of your IP addresses`, 1);
 
-	const sessionReportedIPs = new Set(reportedIPs.map(e => e.ip));
 	let cycleErrorCounts = 0, cycleProcessedCount = 0, cycleReportedCount = 0, cycleSkippedCount = 0;
 
 	for (const event of events) {
 		cycleProcessedCount++;
 
 		const { clientIP, clientRequestPath } = event;
-		if (ips.includes(clientIP)) {
-			cycleSkippedCount++;
-			continue;
-		}
-
-		if (whitelist.endpoints.includes(clientRequestPath)) {
-			cycleSkippedCount++;
-			continue;
-		}
-
-		if (clientRequestPath.length > MAIN.MAX_URL_LENGTH) {
-			cycleSkippedCount++;
-			continue;
-		}
-
-		if (sessionReportedIPs.has(clientIP)) {
-			cycleSkippedCount++;
-			continue;
-		}
-
-		if (isIPReportedRecently(event, reportedIPs).recentlyReported) {
+		if (
+			ips.includes(clientIP) ||
+			whitelist.endpoints.includes(clientRequestPath) ||
+			clientRequestPath.length > MAIN.MAX_URL_LENGTH ||
+			reportedIPsSet.has(clientIP) ||
+			isIPReportedRecently(event, reportedIPs).recentlyReported
+		) {
 			cycleSkippedCount++;
 			continue;
 		}
@@ -189,7 +175,7 @@ const processData = async () => {
 		await logToCSV(event, result.code);
 
 		if (['REPORTED', 'RL_BULK_REPORT', 'READY_FOR_BULK_REPORT'].includes(result.code)) {
-			sessionReportedIPs.add(clientIP);
+			reportedIPsSet.add(clientIP);
 		}
 
 		if (result.success) {
@@ -203,7 +189,7 @@ const processData = async () => {
 		}
 	}
 
-	log(`Reported IPs: ${cycleReportedCount}/${cycleProcessedCount} | Skipped IPs: ${cycleSkippedCount} | Errors: ${cycleErrorCounts}`);
+	log(`Reported IPs: ${cycleReportedCount}/${cycleProcessedCount} | Total unique reported: ${reportedIPsSet.size} | Skipped: ${cycleSkippedCount} | Errors: ${cycleErrorCounts}`);
 	log('===================== End of Reporting Cycle =====================');
 
 	cycleId++;
