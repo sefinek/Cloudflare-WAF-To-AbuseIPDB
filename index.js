@@ -13,6 +13,7 @@ const log = require('./scripts/log.js');
 const ABUSE_STATE = { isLimited: false, isBuffering: false, sentBulk: false };
 const RATE_LIMIT_LOG_INTERVAL = 10 * 60 * 1000;
 const BUFFER_STATS_INTERVAL = 5 * 60 * 1000;
+let cycleId = 1;
 
 const nextRateLimitReset = () => {
 	const now = new Date();
@@ -70,24 +71,6 @@ const fetchCloudflareEvents = async whitelist => {
 	}
 };
 
-const knownStatuses = new Set(['TOO_MANY_REQUESTS', 'REPORTED', 'READY_FOR_BULK_REPORT', 'RL_BULK_REPORT']);
-const isIPReportedRecently = (rayId, ip, reportedIPs) => {
-	const lastReport = reportedIPs.reduce((latest, entry) => {
-		if (
-			(entry.rayId === rayId || entry.ip === ip) &&
-			knownStatuses.has(entry.status) &&
-			(!latest || entry.timestamp > latest.timestamp)
-		) return entry;
-		return latest;
-	}, null);
-
-	if (lastReport && (Date.now() - lastReport.timestamp) < MAIN.REPORTED_IP_COOLDOWN) {
-		return { recentlyReported: true, reason: lastReport.status };
-	}
-
-	return { recentlyReported: false };
-};
-
 const reportIP = async (event, categories, comment) => {
 	await checkRateLimit();
 
@@ -137,7 +120,20 @@ const reportIP = async (event, categories, comment) => {
 	}
 };
 
-let cycleId = 1;
+const knownStatuses = new Set(['TOO_MANY_REQUESTS', 'REPORTED', 'READY_FOR_BULK_REPORT', 'RL_BULK_REPORT']);
+const isIPReportedRecently = (event, reportedIPs) => {
+	const lastReport = reportedIPs.reduce((latest, entry) => {
+		if ((entry.rayId === event.rayName || entry.ip === event.clientIP) && knownStatuses.has(entry.status) && (!latest || entry.timestamp > latest.timestamp)) return entry;
+		console.log(latest);
+		return latest;
+	}, null);
+
+	if (lastReport && (Date.now() - lastReport.timestamp) < MAIN.REPORTED_IP_COOLDOWN) {
+		return { recentlyReported: true, reason: lastReport.status };
+	}
+
+	return { recentlyReported: false };
+};
 
 const processData = async () => {
 	log(`======================== Reporting Cycle No. ${cycleId} ========================`);
@@ -172,7 +168,7 @@ const processData = async () => {
 				continue;
 			}
 
-			const { recentlyReported } = isIPReportedRecently(event.rayName, event.clientIP, reportedIPs);
+			const { recentlyReported } = isIPReportedRecently(event, reportedIPs);
 			if (recentlyReported) {
 				cycleSkippedCount++;
 				continue;
@@ -200,7 +196,7 @@ const processData = async () => {
 			}
 		}
 	} catch (err) {
-		log(`Failed to process reporting cycle: ${err.message}`, 3, true);
+		log(err.stack, 3, true);
 	}
 
 	log(`- Reported IPs: ${cycleReportedCount}`);
