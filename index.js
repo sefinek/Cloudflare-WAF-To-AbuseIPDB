@@ -139,9 +139,9 @@ const isIPReportedRecently = (event, reportedIPs) => {
 const processData = async () => {
 	log(`======================== Reporting Cycle No. ${cycleId} ========================`);
 
-	const whitelist = await getFilters();
+	const [whitelist, reportedIPs] = await Promise.all([getFilters(), readReportedIPs()]);
 	const events = await fetchCloudflareEvents(whitelist);
-	if (!events || events.length === 0) {
+	if (!events?.length) {
 		log('No events fetched, skipping cycle...');
 		return;
 	}
@@ -153,62 +153,36 @@ const processData = async () => {
 	log(`Fetched ${ips.length} of your IP addresses`, 1);
 
 	let cycleErrorCounts = 0, cycleProcessedCount = 0, cycleReportedCount = 0, cycleSkippedCount = 0;
+	const sessionReportedIPs = new Set(reportedIPs.map(e => e.ip));
 
-	try {
-		const reportedIPs = await readReportedIPs();
-		const sessionReportedIPs = new Set(reportedIPs.map(e => e.ip));
+	for (const event of events) {
+		cycleProcessedCount++;
 
-		for (const event of events) {
-			cycleProcessedCount++;
-
-			if (
-				ips.includes(event.clientIP) ||
-				whitelist.endpoints.includes(event.clientRequestPath) ||
-				event.clientRequestPath.length > MAIN.MAX_URL_LENGTH
-			) {
-				cycleSkippedCount++;
-				continue;
-			}
-
-			if (sessionReportedIPs.has(event.clientIP)) {
-				cycleSkippedCount++;
-				continue;
-			}
-
-			const { recentlyReported } = isIPReportedRecently(event, reportedIPs);
-			if (recentlyReported) {
-				cycleSkippedCount++;
-				continue;
-			}
-
-			const result = await reportIP(event, '14', GENERATE_COMMENT(event));
-			await logToCSV(event, result.code);
-
-			if (['REPORTED', 'RL_BULK_REPORT', 'READY_FOR_BULK_REPORT'].includes(result.code)) {
-				sessionReportedIPs.add(event.clientIP);
-			}
-
-			if (result.success) {
-				cycleReportedCount++;
-				await new Promise(resolve => setTimeout(resolve, MAIN.SUCCESS_COOLDOWN));
-			} else {
-				switch (result.code) {
-				case 'FAILED':
-					cycleErrorCounts++;
-					break;
-				case 'ALREADY_IN_BUFFER':
-				case 'READY_FOR_BULK_REPORT':
-				case 'RL_BULK_REPORT':
-					break;
-				default:
-					cycleErrorCounts++;
-					break;
-				}
-			}
-
+		const { clientIP, clientRequestPath } = event;
+		if (
+			ips.includes(clientIP) ||
+			whitelist.endpoints.includes(clientRequestPath) ||
+			clientRequestPath.length > MAIN.MAX_URL_LENGTH ||
+			sessionReportedIPs.has(clientIP) ||
+			isIPReportedRecently(event, reportedIPs).recentlyReported
+		) {
+			cycleSkippedCount++;
+			continue;
 		}
-	} catch (err) {
-		log(err.stack, 3, true);
+
+		const result = await reportIP(event, '14', GENERATE_COMMENT(event));
+		await logToCSV(event, result.code);
+
+		if (['REPORTED', 'RL_BULK_REPORT', 'READY_FOR_BULK_REPORT'].includes(result.code)) {
+			sessionReportedIPs.add(clientIP);
+		}
+
+		if (result.success) {
+			cycleReportedCount++;
+			await new Promise(res => setTimeout(res, MAIN.SUCCESS_COOLDOWN));
+		} else if (result.code === 'FAILED' || !['ALREADY_IN_BUFFER', 'READY_FOR_BULK_REPORT', 'RL_BULK_REPORT'].includes(result.code)) {
+			cycleErrorCounts++;
+		}
 	}
 
 	log(`- Reported IPs: ${cycleReportedCount}`);
