@@ -123,23 +123,21 @@ const reportIP = async (event, categories, comment) => {
 const knownStatuses = new Set(['TOO_MANY_REQUESTS', 'REPORTED', 'READY_FOR_BULK_REPORT', 'RL_BULK_REPORT']);
 const isIPReportedRecently = (event, reportedIPs) => {
 	const now = Date.now();
-	for (const entry of reportedIPs) {
-		if (
-			(entry.ip === event.clientIP || entry.rayId === event.rayName) &&
-			knownStatuses.has(entry.status) &&
-			(now - entry.timestamp) < MAIN.REPORTED_IP_COOLDOWN
-		) {
-			return { recentlyReported: true, reason: entry.status };
-		}
-	}
-
-	return { recentlyReported: false };
+	return reportedIPs.some(entry =>
+		(entry.ip === event.clientIP || entry.rayId === event.rayName) &&
+		knownStatuses.has(entry.status) &&
+		(now - entry.timestamp) < MAIN.REPORTED_IP_COOLDOWN
+	) ? { recentlyReported: true } : { recentlyReported: false };
 };
 
 const processData = async () => {
 	log(`======================== Reporting Cycle No. ${cycleId} ========================`);
 
-	const [whitelist, reportedIPs] = await Promise.all([getFilters(), readReportedIPs()]);
+	const [whitelist, reportedIPs] = await Promise.all([
+		getFilters(),
+		readReportedIPs(),
+	]);
+
 	const events = await fetchCloudflareEvents(whitelist);
 	if (!events?.length) {
 		log('No events fetched, skipping cycle...');
@@ -148,24 +146,41 @@ const processData = async () => {
 
 	await refreshServerIPs();
 	const ips = getServerIPs();
-	if (!Array.isArray(ips)) return log(`Invalid IPs array from getServerIPs(): ${ips}`, 3);
+	if (!Array.isArray(ips)) {
+		log(`Invalid IPs array from getServerIPs(): ${ips}`, 3);
+		return;
+	}
 
 	log(`Fetched ${ips.length} of your IP addresses`, 1);
 
-	let cycleErrorCounts = 0, cycleProcessedCount = 0, cycleReportedCount = 0, cycleSkippedCount = 0;
 	const sessionReportedIPs = new Set(reportedIPs.map(e => e.ip));
+	let cycleErrorCounts = 0, cycleProcessedCount = 0, cycleReportedCount = 0, cycleSkippedCount = 0;
 
 	for (const event of events) {
 		cycleProcessedCount++;
 
 		const { clientIP, clientRequestPath } = event;
-		if (
-			ips.includes(clientIP) ||
-			whitelist.endpoints.includes(clientRequestPath) ||
-			clientRequestPath.length > MAIN.MAX_URL_LENGTH ||
-			sessionReportedIPs.has(clientIP) ||
-			isIPReportedRecently(event, reportedIPs).recentlyReported
-		) {
+		if (ips.includes(clientIP)) {
+			cycleSkippedCount++;
+			continue;
+		}
+
+		if (whitelist.endpoints.includes(clientRequestPath)) {
+			cycleSkippedCount++;
+			continue;
+		}
+
+		if (clientRequestPath.length > MAIN.MAX_URL_LENGTH) {
+			cycleSkippedCount++;
+			continue;
+		}
+
+		if (sessionReportedIPs.has(clientIP)) {
+			cycleSkippedCount++;
+			continue;
+		}
+
+		if (isIPReportedRecently(event, reportedIPs).recentlyReported) {
 			cycleSkippedCount++;
 			continue;
 		}
@@ -180,15 +195,15 @@ const processData = async () => {
 		if (result.success) {
 			cycleReportedCount++;
 			await new Promise(res => setTimeout(res, MAIN.SUCCESS_COOLDOWN));
-		} else if (result.code === 'FAILED' || !['ALREADY_IN_BUFFER', 'READY_FOR_BULK_REPORT', 'RL_BULK_REPORT'].includes(result.code)) {
+			continue;
+		}
+
+		if (result.code === 'FAILED' || !['ALREADY_IN_BUFFER', 'READY_FOR_BULK_REPORT', 'RL_BULK_REPORT'].includes(result.code)) {
 			cycleErrorCounts++;
 		}
 	}
 
-	log(`- Reported IPs: ${cycleReportedCount}`);
-	log(`- Total IPs processed: ${cycleProcessedCount}`);
-	log(`- Skipped IPs: ${cycleSkippedCount}`);
-	log(`- Errors: ${cycleErrorCounts}`);
+	log(`Reported IPs: ${cycleReportedCount}/${cycleProcessedCount} | Skipped IPs: ${cycleSkippedCount} | Errors: ${cycleErrorCounts}`);
 	log('===================== End of Reporting Cycle =====================');
 
 	cycleId++;

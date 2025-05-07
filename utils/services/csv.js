@@ -5,6 +5,7 @@ const log = require('../../scripts/log.js');
 
 const CSV_FILE_PATH = path.join(__dirname, '..', '..', 'tmp', 'reported_ips.csv');
 const MAX_CSV_SIZE_BYTES = 4 * 1024 * 1024; // 4 MB
+const REPORTED_IP_COOLDOWN = 15 * 60 * 1000; // 15 minut
 const CSV_HEADER = 'Timestamp,CF RayID,IP,Country,Hostname,Endpoint,User-Agent,Action taken,Status,Sefinek API\n';
 
 const initializeTmpFile = async () => {
@@ -26,23 +27,31 @@ const checkCSVSize = async () => {
 		const stats = await fs.stat(CSV_FILE_PATH);
 		if (stats.size > MAX_CSV_SIZE_BYTES) {
 			await fs.writeFile(CSV_FILE_PATH, CSV_HEADER);
-			log(`The CSV file size exceeded ${MAX_CSV_SIZE_BYTES / (1024 * 1024)} MB. To save memory, its contents have been removed.`, 1);
+			log(`The CSV file size exceeded ${MAX_CSV_SIZE_BYTES / (1024 * 1024)} MB. Cleared.`, 1);
 		}
 	} catch (err) {
-		log(`Failed to check CSV file size: ${err.message}`, 3, true);
+		log(`Failed to check CSV size: ${err.message}`, 3, true);
 	}
 };
 
 const escapeCSVValue = value => {
-	if (typeof value === 'string' && value.includes(',')) return `"${value.replace(/"/g, '""')}"`;
+	if (typeof value === 'string' && value.includes(',')) {
+		return `"${value.replace(/"/g, '""')}"`;
+	}
 	return value || '';
 };
 
-const logToCSV = async ({ rayName, clientIP, clientCountryName, clientRequestHTTPHost, clientRequestPath, userAgent, action }, status = 'N/A', sefinekAPI) => {
+const logToCSV = async (event, status = 'N/A', sefinekAPI = false) => {
 	await initializeTmpFile();
 	await checkCSVSize();
 
-	const logLine = `${new Date().toISOString()},${rayName},${clientIP},${clientCountryName},${clientRequestHTTPHost},${escapeCSVValue(clientRequestPath)},${escapeCSVValue(userAgent)},${action.toUpperCase()},${status},${sefinekAPI || false}`;
+	const {
+		rayName, clientIP, clientCountryName, clientRequestHTTPHost,
+		clientRequestPath, userAgent, action,
+	} = event;
+
+	const logLine = `${new Date().toISOString()},${rayName},${clientIP},${clientCountryName},${clientRequestHTTPHost},${escapeCSVValue(clientRequestPath)},${escapeCSVValue(userAgent)},${action.toUpperCase()},${status},${sefinekAPI}`;
+
 	try {
 		await fs.appendFile(CSV_FILE_PATH, logLine + '\n');
 	} catch (err) {
@@ -55,13 +64,17 @@ const readReportedIPs = async () => {
 
 	try {
 		const content = await fs.readFile(CSV_FILE_PATH, 'utf-8');
-		return content
+		const now = Date.now();
+
+		const lines = content
 			.split('\n')
-			.slice(1)
-			.filter(line => line.trim() !== '')
+			.filter(line => line.trim() !== '');
+
+		const header = lines[0];
+		const entries = lines.slice(1)
 			.map(line => {
 				const parts = line.split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/g);
-				if (!parts || parts.length < 9) return null;
+				if (parts.length < 9) return null;
 
 				return {
 					timestamp: Date.parse(parts[0]),
@@ -74,9 +87,15 @@ const readReportedIPs = async () => {
 					action: parts[7],
 					status: parts[8],
 					sefinekAPI: parts[9] === 'true',
+					raw: line,
 				};
 			})
-			.filter(item => item !== null);
+			.filter(e => e && now - e.timestamp < REPORTED_IP_COOLDOWN);
+
+		const updated = [header, ...entries.map(e => e.raw)].join('\n');
+		await fs.writeFile(CSV_FILE_PATH, updated + '\n');
+
+		return entries.map(({ raw, ...rest }) => rest);
 	} catch (err) {
 		log(`Failed to read CSV: ${err.message}`, 3, true);
 		return [];

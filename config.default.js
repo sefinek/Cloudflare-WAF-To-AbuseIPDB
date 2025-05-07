@@ -13,13 +13,13 @@ exports.MAIN = {
 
 	// The minimum time (in hours) that must pass after reporting an IP address before it can be reported again.
 	// The required time is >= 15 minutes, according to AbuseIPDB API limits.
-	REPORTED_IP_COOLDOWN: 6 * 60 * 60 * 1000,
+	REPORTED_IP_COOLDOWN: 8 * 60 * 60 * 1000,
 
 	// The maximum URI length that can be reported to AbuseIPDB. If Cloudflare returns a longer URI, the API request will fail.
 	MAX_URL_LENGTH: 800,
 
 	// Additional delay (in milliseconds) after each successful IP report to avoid overloading the AbuseIPDB API.
-	SUCCESS_COOLDOWN: 20,
+	SUCCESS_COOLDOWN: 10,
 
 	// CRON: Interval for refreshing your IP address. Default: every 6 hours
 	// This ensures that WAF violations originating from your IP address are not reported to AbuseIPDB.
