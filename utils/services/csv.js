@@ -5,7 +5,6 @@ const log = require('../../scripts/log.js');
 
 const CSV_FILE_PATH = path.join(__dirname, '..', '..', 'tmp', 'reported_ips.csv');
 const MAX_CSV_SIZE_BYTES = 4 * 1024 * 1024; // 4 MB
-const REPORTED_IP_COOLDOWN = 15 * 60 * 1000; // 15 minut
 const CSV_HEADER = 'Timestamp,CF RayID,IP,Country,Hostname,Endpoint,User-Agent,Action taken,Status,Sefinek API\n';
 
 const initializeTmpFile = async () => {
@@ -64,7 +63,6 @@ const readReportedIPs = async () => {
 
 	try {
 		const content = await fs.readFile(CSV_FILE_PATH, 'utf-8');
-		const now = Date.now();
 
 		const lines = content
 			.split('\n')
@@ -90,7 +88,7 @@ const readReportedIPs = async () => {
 					raw: line,
 				};
 			})
-			.filter(e => e && now - e.timestamp < REPORTED_IP_COOLDOWN);
+			.filter(e => e);
 
 		const updated = [header, ...entries.map(e => e.raw)].join('\n');
 		await fs.writeFile(CSV_FILE_PATH, updated + '\n');
