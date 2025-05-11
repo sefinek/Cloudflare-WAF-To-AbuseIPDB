@@ -1,19 +1,21 @@
 exports.MAIN = {
-	/* ------ Server ----- */
-	NODE_ENV: 'production', // Environment mode: 'production' or 'development'
-	CLOUDFLARE_ZONE_ID: '00000000000000000000000000000000', // API key for Cloudflare access
-	CLOUDFLARE_API_KEY: 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX', // https://dash.cloudflare.com/profile/api-tokens
-	ABUSEIPDB_API_KEY: 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX', // API key for reporting malicious IPs to AbuseIPDB
+	/* --------------------------- Server --------------------------- */
+	SERVER_ID: null, // Use 'development' only during programming or testing. Setting it to 'production' has no effect. If you don't want to define the name at all, use null (not as a string).
 	RUN_ON_START: true, // Should the reporting function run immediately after the script starts?
 	IPv6_SUPPORT: true, // Specifies whether the device has been assigned an IPv6 address.
 
-	/* ------ CYCLES ----- */
-	// CRON: Schedule for running cron jobs for reporting to AbuseIPDB.
-	REPORT_SCHEDULE: '0 */3 * * *',
+	/* --------------------------- Secret keys --------------------------- */
+	CLOUDFLARE_ZONE_ID: '00000000000000000000000000000000',
+	CLOUDFLARE_API_KEY: '0000000000000000000000000000000000000000', // https://dash.cloudflare.com/profile/api-tokens
+	ABUSEIPDB_API_KEY: '00000000000000000000000000000000000000000000000000000000000000000000000000000000', // API key for reporting malicious IPs to AbuseIPDB
 
-	// The minimum time (in hours) that must pass after reporting an IP address before it can be reported again.
+	/* --------------------------- Cycles --------------------------- */
+	// CRON: Schedule for running cron jobs for reporting to AbuseIPDB.
+	REPORT_SCHEDULE: '0 */2 * * *',
+
+	// The minimum time that must pass after reporting an IP address before it can be reported again.
 	// The required time is >= 15 minutes, according to AbuseIPDB API limits.
-	REPORTED_IP_COOLDOWN: 8 * 60 * 60 * 1000,
+	REPORTED_IP_COOLDOWN: 8 * 60 * 60 * 1000, // 8h
 
 	// The maximum URI length that can be reported to AbuseIPDB. If Cloudflare returns a longer URI, the API request will fail.
 	MAX_URL_LENGTH: 800,
@@ -25,7 +27,12 @@ exports.MAIN = {
 	// This ensures that WAF violations originating from your IP address are not reported to AbuseIPDB.
 	IP_REFRESH_SCHEDULE: '0 */6 * * *',
 
-	/* ------ Sefinek API ----- */
+	/* --------------------------- Discord Webhooks --------------------------- */
+	DISCORD_WEBHOOKS_ENABLED: false, // Should the script send webhooks? These will include error reports, daily summaries, and other related information.
+	DISCORD_WEBHOOKS_URL: '',
+	DISCORD_WEBHOOK_USERNAME: 'SERVER_ID', // The name displayed as the message author on Discord. If you don't want to set it, leave the value as null. Providing SERVER_ID as a string will display this.MAIN.SERVER_ID.
+
+	/* --------------------------- Sefinek API --------------------------- */
 	// Report IP addresses to api.sefinek.net to support the development of the repository at https://github.com/sefinek/Malicious-IP-Addresses. SECRET_TOKEN is required if true.
 	SEFIN_API_REPORTING: false,
 

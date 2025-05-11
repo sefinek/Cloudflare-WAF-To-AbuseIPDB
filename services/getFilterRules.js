@@ -1,4 +1,4 @@
-const axios = require('./../../scripts/services/axios.js');
+const axios = require('../scripts/services/axios.js');
 
 module.exports = async () => {
 	try {

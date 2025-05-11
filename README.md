@@ -50,7 +50,7 @@ https://github.com/sefinek/Cloudflare-WAF-To-AbuseIPDB
    ```bash
    cp config.default.js config.js
    ```
-4. Paste the tokens into the `config.js` file. Make sure that `NODE_ENV` is set to `production`.
+4. Paste the tokens into the `config.js` file.
    ```bash
    nano config.js
    ```
@@ -105,5 +105,5 @@ This project is inspired by the [MHG-LAB/Cloudflare-WAF-to-AbuseIPDB](https://gi
 I'm not particularly fond of Python and usually try to avoid using this programming language, which is why I decided to create this repository.
 
 
-## 📑 [MIT License](LICENSE)
+## 📑 [GPL-3.0 License](LICENSE)
 Copyright 2024-2025 © by [Sefinek](https://sefinek.net). All Rights Reserved.

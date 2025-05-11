@@ -1,8 +1,8 @@
-const axios = require('./../../scripts/services/axios.js');
+const axios = require('../scripts/services/axios.js');
 const { readReportedIPs, updateSefinekAPIInCSV } = require('./csv.js');
-const { getServerIPs } = require('./../../scripts/services/ipFetcher.js');
-const log = require('../../scripts/log.js');
-const { SEFIN_API_SECRET_TOKEN } = require('../../config.js').MAIN;
+const { getServerIPs } = require('../scripts/services/ipFetcher.js');
+const log = require('../scripts/log.js');
+const { SEFIN_API_SECRET_TOKEN } = require('../config.js').MAIN;
 
 module.exports = async () => {
 	const reportedIPs = (await readReportedIPs() || []).filter(x => x.status === 'REPORTED' && !getServerIPs().includes(x.ip) && !x.sefinekAPI);

@@ -1,4 +1,4 @@
-const { CLOUDFLARE_ZONE_ID } = require('../../config.js').MAIN;
+const { CLOUDFLARE_ZONE_ID } = require('../config.js').MAIN;
 
 module.exports = limit => {
 	const variables = {

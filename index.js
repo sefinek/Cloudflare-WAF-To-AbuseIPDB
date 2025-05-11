@@ -1,13 +1,15 @@
 const { CronJob } = require('cron');
 const axios = require('./scripts/services/axios.js');
 const { MAIN, GENERATE_COMMENT } = require('./config.js');
-const PAYLOAD = require('./utils/services/payload.js');
+const PAYLOAD = require('./services/generateFirewallQuery.js');
 const { saveBufferToFile, loadBufferFromFile, sendBulkReport, BULK_REPORT_BUFFER } = require('./scripts/services/bulk.js');
-const SefinekAPI = require('./utils/services/SefinekAPI.js');
-const headers = require('./utils/headers.js');
-const { logToCSV, readReportedIPs } = require('./utils/services/csv.js');
+const { name, repoFullUrl } = require('./scripts/repo.js');
+const SefinekAPI = require('./services/reportToSefinek.js');
+const headers = require('./services/headers.js');
+const { logToCSV, readReportedIPs } = require('./services/csv.js');
+const sendWebhook = require('./scripts/services/discordWebhooks.js');
 const { refreshServerIPs, getServerIPs } = require('./scripts/services/ipFetcher.js');
-const getFilters = require('./utils/services/getFilters.js');
+const getFilters = require('./services/getFilterRules.js');
 const log = require('./scripts/log.js');
 
 const ABUSE_STATE = { isLimited: false, isBuffering: false, sentBulk: false };
@@ -30,7 +32,7 @@ const checkRateLimit = async () => {
 		if (now >= RATELIMIT_RESET.getTime()) {
 			ABUSE_STATE.isLimited = false;
 			ABUSE_STATE.isBuffering = false;
-			if (!ABUSE_STATE.sentBulk && BULK_REPORT_BUFFER.size > 0) await sendBulkReport();
+			if (!ABUSE_STATE.sentBulk && BULK_REPORT_BUFFER.size > 0) await sendBulkReport(true);
 			RATELIMIT_RESET = nextRateLimitReset();
 			ABUSE_STATE.sentBulk = false;
 			log(`Rate limit reset. Next reset scheduled at ${RATELIMIT_RESET.toISOString()}`, 1);
@@ -108,7 +110,7 @@ const reportIP = async (event, categories, comment) => {
 			if (!BULK_REPORT_BUFFER.has(event.clientIP)) {
 				BULK_REPORT_BUFFER.set(event.clientIP, { timestamp: event.datetime, categories, comment });
 				await saveBufferToFile();
-				log(`Queued ${event.clientIP} for bulk report due to rate limit`);
+				log(`Queued ${event.clientIP} for bulk report due to rate limit`, 1);
 				return { success: false, code: 'RL_BULK_REPORT' };
 			}
 
@@ -131,7 +133,7 @@ const isIPReportedRecently = (event, reportedIPs) => {
 };
 
 const processData = async () => {
-	log(`======================== Reporting Cycle No. ${cycleId} ========================`);
+	log(`======================== STARTING REPORTING CYCLE #${cycleId} ========================`);
 
 	const [whitelist, reportedIPs] = await Promise.all([
 		getFilters(),
@@ -189,20 +191,19 @@ const processData = async () => {
 		}
 	}
 
-	log(`Reported IPs: ${cycleReportedCount}/${cycleProcessedCount} | Total unique reported: ${reportedIPsSet.size} | Skipped: ${cycleSkippedCount} | Errors: ${cycleErrorCounts}`);
-	log('===================== End of Reporting Cycle =====================');
-
+	log(`Reported IPs: ${cycleReportedCount}/${cycleProcessedCount} | Skipped: ${cycleSkippedCount} | Errors: ${cycleErrorCounts}`);
+	log(`======================== REPORTING CYCLE #${cycleId} COMPLETED ========================`);
 	cycleId++;
 };
 
 (async () => {
 	log('Loading data, please wait...');
 
-	// Bulk
+	// Bulk Report
 	await loadBufferFromFile();
 	if (BULK_REPORT_BUFFER.size > 0 && !ABUSE_STATE.isLimited) {
 		log(`Found ${BULK_REPORT_BUFFER.size} IPs in buffer after restart. Sending bulk report...`);
-		await sendBulkReport();
+		await sendBulkReport(true);
 	}
 
 	// Sefinek API
@@ -210,10 +211,12 @@ const processData = async () => {
 		new CronJob(MAIN.SEFIN_API_REPORT_SCHEDULE, SefinekAPI, null, true);
 	}
 
-	// AbuseIPDB
+	// Report Schedule
 	new CronJob(MAIN.REPORT_SCHEDULE, processData, null, true);
 
 	// Ready
+	await sendWebhook(`[${name}](${repoFullUrl}) was successfully started!`, 0x59D267);
+	log(`All set! ${MAIN.RUN_ON_START ? 'First cycle will run shortly' : 'Waiting for the first scheduled cycle'}...`, 1);
 	process.send?.('ready');
 
 	// Run on start?
