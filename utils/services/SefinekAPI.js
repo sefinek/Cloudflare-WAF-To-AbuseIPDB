@@ -1,8 +1,8 @@
 const axios = require('./../../scripts/services/axios.js');
 const { readReportedIPs, updateSefinekAPIInCSV } = require('./csv.js');
-const log = require('../../scripts/log.js');
 const { getServerIPs } = require('./../../scripts/services/ipFetcher.js');
-const { SEFINEK_API } = require('../../config.js').MAIN;
+const log = require('../../scripts/log.js');
+const { SEFIN_API_SECRET_TOKEN } = require('../../config.js').MAIN;
 
 module.exports = async () => {
 	const reportedIPs = (await readReportedIPs() || []).filter(x => x.status === 'REPORTED' && !getServerIPs().includes(x.ip) && !x.sefinekAPI);
@@ -29,7 +29,7 @@ module.exports = async () => {
 				country: ip.country,
 				timestamp: ip.timestamp,
 			})),
-		}, { headers: { 'X-API-Key': SEFINEK_API.SECRET_TOKEN } });
+		}, { headers: { 'X-API-Key': SEFIN_API_SECRET_TOKEN } });
 
 		log(`Sefinek API: Successfully sent ${uniqueLogs.length} logs! Status: ${res.status}`, 1);
 
