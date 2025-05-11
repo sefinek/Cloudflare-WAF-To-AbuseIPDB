@@ -28,7 +28,7 @@ exports.MAIN = {
 	IP_REFRESH_SCHEDULE: '0 */6 * * *',
 
 	/* --------------------------- Discord Webhooks --------------------------- */
-	DISCORD_WEBHOOKS_ENABLED: false, // Should the script send webhooks? These will include error reports, daily summaries, and other related information.
+	DISCORD_WEBHOOKS_ENABLED: false, // Should the script send webhooks with information about errors, execution status, and other events?
 	DISCORD_WEBHOOKS_URL: '',
 	DISCORD_WEBHOOK_USERNAME: 'SERVER_ID', // The name displayed as the message author on Discord. If you don't want to set it, leave the value as null. Providing SERVER_ID as a string will display this.MAIN.SERVER_ID.
 
