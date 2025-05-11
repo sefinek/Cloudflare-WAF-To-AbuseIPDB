@@ -93,7 +93,7 @@ const readReportedIPs = async () => {
 		const updated = [header, ...entries.map(e => e.raw)].join('\n');
 		await fs.writeFile(CSV_FILE_PATH, updated + '\n');
 
-		return entries.map(({ raw, ...rest }) => rest);
+		return entries.map(({ ...rest }) => rest);
 	} catch (err) {
 		log(`Failed to read CSV: ${err.message}`, 3, true);
 		return [];
