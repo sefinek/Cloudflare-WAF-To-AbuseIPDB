@@ -17,6 +17,7 @@ const initializeTmpFile = async () => {
 			log(`Created missing CSV file: ${CSV_FILE_PATH}`, 1);
 			return;
 		}
+
 		throw err;
 	}
 };
@@ -29,7 +30,7 @@ const checkCSVSize = async () => {
 			log(`The CSV file size exceeded ${MAX_CSV_SIZE_BYTES / (1024 * 1024)} MB. Cleared.`, 1);
 		}
 	} catch (err) {
-		log(`Failed to check CSV size: ${err.message}`, 3, true);
+		log(`Failed to check CSV size: ${err.stack}`, 3, true);
 	}
 };
 
@@ -54,7 +55,7 @@ const logToCSV = async (event, status = 'N/A', sefinekAPI = false) => {
 	try {
 		await fs.appendFile(CSV_FILE_PATH, logLine + '\n');
 	} catch (err) {
-		log(`Failed to append to CSV: ${err.message}`, 3, true);
+		log(`Failed to append to CSV: ${err.stack}`, 3, true);
 	}
 };
 
@@ -95,7 +96,7 @@ const readReportedIPs = async () => {
 
 		return entries.map(({ ...rest }) => rest);
 	} catch (err) {
-		log(`Failed to read CSV: ${err.message}`, 3, true);
+		log(`Failed to read CSV: ${err.stack}`, 3, true);
 		return [];
 	}
 };
@@ -108,9 +109,7 @@ const updateSefinekAPIInCSV = async (rayId, reportedToSefinekAPI) => {
 
 	try {
 		const content = await fs.readFile(CSV_FILE_PATH, 'utf-8');
-		const lines = content.split('\n');
-
-		const updatedLines = lines.map(line => {
+		const updatedLines = content.split('\n').map(line => {
 			const parts = line.split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/g);
 			if (parts.length >= 9 && parts[1] === rayId) {
 				parts[9] = reportedToSefinekAPI;
@@ -121,7 +120,7 @@ const updateSefinekAPIInCSV = async (rayId, reportedToSefinekAPI) => {
 
 		await fs.writeFile(CSV_FILE_PATH, updatedLines.join('\n'));
 	} catch (err) {
-		log(`Failed to update CSV: ${err.message}`, 3, true);
+		log(`Failed to update CSV: ${err.stack}`, 3, true);
 	}
 };
 
