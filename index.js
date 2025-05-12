@@ -1,16 +1,18 @@
 const { CronJob } = require('cron');
-const axios = require('./scripts/services/axios.js');
-const { MAIN, GENERATE_COMMENT } = require('./config.js');
-const PAYLOAD = require('./services/generateFirewallQuery.js');
-const { saveBufferToFile, loadBufferFromFile, sendBulkReport, BULK_REPORT_BUFFER } = require('./scripts/services/bulk.js');
+const logo = require('./scripts/header.js');
 const { name, repoFullUrl } = require('./scripts/repo.js');
+const axios = require('./scripts/services/axios.js');
+const sendWebhook = require('./scripts/services/discordWebhooks.js');
+const { refreshServerIPs, getServerIPs } = require('./scripts/services/ipFetcher.js');
+const { saveBufferToFile, loadBufferFromFile, sendBulkReport, BULK_REPORT_BUFFER } = require('./scripts/services/bulk.js');
+const PAYLOAD = require('./services/generateFirewallQuery.js');
 const SefinekAPI = require('./services/reportToSefinek.js');
 const headers = require('./services/headers.js');
 const { logToCSV, readReportedIPs } = require('./services/csv.js');
-const sendWebhook = require('./scripts/services/discordWebhooks.js');
-const { refreshServerIPs, getServerIPs } = require('./scripts/services/ipFetcher.js');
 const getFilters = require('./services/getFilterRules.js');
+const { MAIN, GENERATE_COMMENT } = require('./config.js');
 const log = require('./scripts/log.js');
+const { version } = require('./scripts/repo');
 
 const ABUSE_STATE = { isLimited: false, isBuffering: false, sentBulk: false };
 const RATE_LIMIT_LOG_INTERVAL = 10 * 60 * 1000;
@@ -62,7 +64,7 @@ const fetchCloudflareEvents = async whitelist => {
 
 		const filtered = events.filter(event => !isWhitelisted(event));
 
-		log(`Fetched ${events.length} events (filtered ${filtered.length}) from Cloudflare`, 1);
+		log(`Fetched ${events.length} Cloudflare (${filtered.length} filtered) `, 1);
 		return filtered;
 	} catch (err) {
 		log(err.response?.data
@@ -133,31 +135,33 @@ const isIPReportedRecently = (event, reportedIPs) => {
 };
 
 const processData = async () => {
-	log(`======================== STARTING REPORTING CYCLE #${cycleId} ========================`);
+	log(`====================== STARTING REPORTING CYCLE #${cycleId} ======================`);
 
+	// IP refresh
+	await refreshServerIPs();
+	const ips = getServerIPs();
+	if (!Array.isArray(ips)) {
+		log(`getServerIPs() returned an invalid result: ${ips}`, 3);
+		return;
+	}
+	log(`Collected ${ips.length} unique IP address${ips.length !== 1 ? 'es' : ''} (public+interface)`, 1);
+
+	// Cache
 	const [whitelist, reportedIPs] = await Promise.all([
 		getFilters(),
 		readReportedIPs(),
 	]);
 
+	// Fetch events
 	const reportedIPsSet = new Set(reportedIPs.map(e => e.ip));
 	const events = await fetchCloudflareEvents(whitelist);
 	if (!events?.length) {
-		log('No events fetched, skipping cycle...');
+		log('No events fetched from Cloudflare. Skipping this cycle.');
 		return;
 	}
 
-	await refreshServerIPs();
-	const ips = getServerIPs();
-	if (!Array.isArray(ips)) {
-		log(`Invalid IPs array from getServerIPs(): ${ips}`, 3);
-		return;
-	}
-
-	log(`Fetched ${ips.length} of your IP addresses`, 1);
-
+	// Report IPs
 	let cycleErrorCounts = 0, cycleProcessedCount = 0, cycleReportedCount = 0, cycleSkippedCount = 0;
-
 	for (const event of events) {
 		cycleProcessedCount++;
 
@@ -191,13 +195,21 @@ const processData = async () => {
 		}
 	}
 
-	log(`Reported IPs: ${cycleReportedCount}/${cycleProcessedCount} | Skipped: ${cycleSkippedCount} | Errors: ${cycleErrorCounts}`);
-	log(`======================== REPORTING CYCLE #${cycleId} COMPLETED ========================`);
+	log(`Cycle summary — Processed: ${cycleProcessedCount}, Reported: ${cycleReportedCount}, Skipped: ${cycleSkippedCount}, Errors: ${cycleErrorCounts}`);
+	log(`====================== REPORTING CYCLE #${cycleId} COMPLETED ======================`);
 	cycleId++;
 };
 
 (async () => {
-	log('Loading data, please wait...');
+	console.log(logo(1, `Cloudflare WAF To AbuseIPDB (v${version})`));
+	log('💙 If you find this helpful, please consider supporting me. I would really appreciate it! https://sefinek.net/donate');
+
+	// Auto updates
+	if (MAIN.AUTO_UPDATE_ENABLED && MAIN.AUTO_UPDATE_SCHEDULE && MAIN.SERVER_ID !== 'development') {
+		await require('./scripts/services/updates.js');
+	} else {
+		await require('./scripts/services/version.js');
+	}
 
 	// Bulk Report
 	await loadBufferFromFile();

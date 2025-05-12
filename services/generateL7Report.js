@@ -1,9 +1,9 @@
 const fs = require('node:fs');
 const path = require('node:path');
-const PAYLOAD = require('./services/generateFirewallQuery.js');
-const axios = require('./scripts/services/axios.js');
-const headers = require('./services/headers.js');
-const log = require('./scripts/log.js');
+const PAYLOAD = require('./generateFirewallQuery.js');
+const axios = require('../scripts/services/axios.js');
+const headers = require('./headers.js');
+const log = require('../scripts/log.js');
 
 const fetchCloudflareEvents = async () => {
 	try {
@@ -12,7 +12,7 @@ const fetchCloudflareEvents = async () => {
 		const events = data?.data?.viewer?.zones?.[0]?.firewallEventsAdaptive || [];
 		const filtered = events.filter(e => e.source === 'l7ddos');
 
-		log(`Fetched ${events.length} events (filtered ${filtered.length} L7 DDoS)`, 1);
+		log(`Fetched ${events.length} events from Cloudflare (filtered ${filtered.length} L7 DDoS)`, 1);
 		return filtered;
 	} catch (err) {
 		log(`Cloudflare API error: ${err.message}`, 3);
@@ -21,10 +21,9 @@ const fetchCloudflareEvents = async () => {
 };
 
 const ensureFile = filePath => {
-	if (!fs.existsSync(filePath)) {
-		fs.mkdirSync(path.dirname(filePath), { recursive: true });
-		fs.writeFileSync(filePath, '');
-	}
+	if (fs.existsSync(filePath)) return;
+	fs.mkdirSync(path.dirname(filePath), { recursive: true });
+	fs.writeFileSync(filePath, '');
 };
 
 const saveToCSV = (events, filePath = 'report.csv') => {

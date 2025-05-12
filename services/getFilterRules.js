@@ -1,11 +1,22 @@
 const axios = require('../scripts/services/axios.js');
+const log = require('../scripts/log.js');
 
 module.exports = async () => {
 	try {
 		const res = await axios.get('https://api.sefinek.net/api/v2/filter-rules');
-		if (!res.data.success) throw new Error('Sefinek API Error');
-		return { userAgents: res.data.userAgents, domains: res.data.domains, endpoints: res.data.endpoints, imgExtensions: res.data.imgExtensions };
+		const data = res.data;
+		if (!data.success || typeof data !== 'object') {
+			throw new Error(`Sefinek API error: Invalid response (success=${data.success})`);
+		}
+
+		const { userAgents, domains, endpoints, imgExtensions, lastUpdate } = data;
+		if (!Array.isArray(userAgents) || !Array.isArray(domains) || !Array.isArray(endpoints) || !Array.isArray(imgExtensions)) {
+			throw new Error('Sefinek API error: Response is missing expected arrays');
+		}
+
+		log(`Filter rules loaded from api.sefinek.net. Last update: ${lastUpdate}`, 1);
+		return { userAgents, domains, endpoints, imgExtensions, lastUpdate };
 	} catch (err) {
-		throw new Error(err);
+		throw new Error(`Failed to fetch filter rules: ${err.message}`);
 	}
 };
