@@ -1,8 +1,7 @@
 const { CronJob } = require('cron');
-const logo = require('./scripts/header.js');
+const banner = require('./scripts/banners/cloudflare.js');
 const { name, repoFullUrl } = require('./scripts/repo.js');
-const axios = require('./scripts/services/axios.js');
-const sendWebhook = require('./scripts/services/discordWebhooks.js');
+const { axios } = require('./scripts/services/axios.js');
 const { refreshServerIPs, getServerIPs } = require('./scripts/services/ipFetcher.js');
 const { saveBufferToFile, loadBufferFromFile, sendBulkReport, BULK_REPORT_BUFFER } = require('./scripts/services/bulk.js');
 const PAYLOAD = require('./services/generateFirewallQuery.js');
@@ -11,7 +10,7 @@ const headers = require('./services/headers.js');
 const { logToCSV, readReportedIPs } = require('./services/csv.js');
 const getFilters = require('./services/getFilterRules.js');
 const { MAIN, GENERATE_COMMENT } = require('./config.js');
-const log = require('./scripts/log.js');
+const logger = require('./scripts/logger.js');
 const { version } = require('./scripts/repo');
 
 const ABUSE_STATE = { isLimited: false, isBuffering: false, sentBulk: false };
@@ -37,10 +36,10 @@ const checkRateLimit = async () => {
 			if (!ABUSE_STATE.sentBulk && BULK_REPORT_BUFFER.size > 0) await sendBulkReport();
 			RATELIMIT_RESET = nextRateLimitReset();
 			ABUSE_STATE.sentBulk = false;
-			log(`Rate limit reset. Next reset scheduled at ${RATELIMIT_RESET.toISOString()}`, 1);
+			logger.log(`Rate limit reset. Next reset scheduled at ${RATELIMIT_RESET.toISOString()}`, 1);
 		} else if (now - LAST_RATELIMIT_LOG >= RATE_LIMIT_LOG_INTERVAL) {
 			const minutesLeft = Math.ceil((RATELIMIT_RESET.getTime() - now) / 60000);
-			log(`Rate limit is still active. Collected ${BULK_REPORT_BUFFER.size} IPs. Waiting for reset in ${minutesLeft} minute(s) (${RATELIMIT_RESET.toISOString()})`, 1);
+			logger.log(`Rate limit is still active. Collected ${BULK_REPORT_BUFFER.size} IPs. Waiting for reset in ${minutesLeft} minute(s) (${RATELIMIT_RESET.toISOString()})`, 1);
 			LAST_RATELIMIT_LOG = now;
 		}
 	}
@@ -64,10 +63,10 @@ const fetchCloudflareEvents = async whitelist => {
 
 		const filtered = events.filter(event => !isWhitelisted(event));
 
-		log(`Fetched ${events.length} Cloudflare (${filtered.length} filtered) `, 1);
+		logger.log(`Fetched ${events.length} Cloudflare events (${filtered.length} matching filter criteria) `, 1);
 		return filtered;
 	} catch (err) {
-		log(err.response?.data
+		logger.log(err.response?.data
 			? `${err.response.status} HTTP ERROR Cloudflare API: ${JSON.stringify(err.response.data, null, 2)}`
 			: `Unknown error with Cloudflare API: ${err.message}`, 3
 		);
@@ -82,7 +81,7 @@ const reportIP = async (event, categories, comment) => {
 		if (!BULK_REPORT_BUFFER.has(event.clientIP)) {
 			BULK_REPORT_BUFFER.set(event.clientIP, { categories, timestamp: event.datetime, comment });
 			await saveBufferToFile();
-			log(`Queued ${event.clientIP} for bulk report (collected ${BULK_REPORT_BUFFER.size} IPs)`, 1);
+			logger.log(`Queued ${event.clientIP} for bulk report (collected ${BULK_REPORT_BUFFER.size} IPs)`, 1);
 			return { success: false, code: 'READY_FOR_BULK_REPORT' };
 		}
 		return { success: false, code: 'ALREADY_IN_BUFFER' };
@@ -95,7 +94,7 @@ const reportIP = async (event, categories, comment) => {
 			comment,
 		}, { headers: headers.ABUSEIPDB });
 
-		log(`Reported ${event.clientIP}; URI: ${event.clientRequestPath}`, 1);
+		logger.log(`Reported ${event.clientIP}; URI: ${event.clientRequestPath}`, 1);
 		return { success: true, code: 'REPORTED' };
 	} catch (err) {
 		const status = err.response?.status ?? 'unknown';
@@ -106,20 +105,20 @@ const reportIP = async (event, categories, comment) => {
 				ABUSE_STATE.sentBulk = false;
 				LAST_RATELIMIT_LOG = Date.now();
 				RATELIMIT_RESET = nextRateLimitReset();
-				log(`Daily AbuseIPDB limit reached. Buffering reports until ${RATELIMIT_RESET.toLocaleString()}`, 0, true);
+				logger.log(`Daily AbuseIPDB limit reached. Buffering reports until ${RATELIMIT_RESET.toLocaleString()}`, 0, true);
 			}
 
 			if (!BULK_REPORT_BUFFER.has(event.clientIP)) {
 				BULK_REPORT_BUFFER.set(event.clientIP, { timestamp: event.datetime, categories, comment });
 				await saveBufferToFile();
-				log(`Queued ${event.clientIP} for bulk report due to rate limit`, 1);
+				logger.log(`Queued ${event.clientIP} for bulk report due to rate limit`, 1);
 				return { success: false, code: 'RL_BULK_REPORT' };
 			}
 
 			return { success: false, code: 'ALREADY_IN_BUFFER' };
 		}
 
-		log(`Failed to report ${event.clientIP}; ${err.response?.data?.errors ? JSON.stringify(err.response.data.errors) : err.message}`, 3);
+		logger.log(`Failed to report ${event.clientIP}; ${err.response?.data?.errors ? JSON.stringify(err.response.data.errors) : err.message}`, 3);
 		return { success: false, code: 'FAILED' };
 	}
 };
@@ -135,16 +134,16 @@ const isIPReportedRecently = (event, reportedIPs) => {
 };
 
 const processData = async () => {
-	log(`====================== STARTING REPORTING CYCLE #${cycleId} ======================`);
+	logger.log(`====================== STARTING REPORTING CYCLE #${cycleId} ======================`);
 
 	// IP refresh
 	await refreshServerIPs();
 	const ips = getServerIPs();
 	if (!Array.isArray(ips)) {
-		log(`getServerIPs() returned an invalid result: ${ips}`, 3);
+		logger.log(`getServerIPs() returned an invalid result: ${ips}`, 3);
 		return;
 	}
-	log(`Collected ${ips.length} unique IP address${ips.length !== 1 ? 'es' : ''} (public+interface)`, 1);
+	logger.log(`Collected ${ips.length} unique IP address${ips.length !== 1 ? 'es' : ''} (public+interface)`, 1);
 
 	// Cache
 	const [whitelist, reportedIPs] = await Promise.all([
@@ -156,7 +155,7 @@ const processData = async () => {
 	const reportedIPsSet = new Set(reportedIPs.map(e => e.ip));
 	const events = await fetchCloudflareEvents(whitelist);
 	if (!events?.length) {
-		log('No events fetched from Cloudflare. Skipping this cycle.');
+		logger.log('No events fetched from Cloudflare. Skipping this cycle.');
 		return;
 	}
 
@@ -195,14 +194,14 @@ const processData = async () => {
 		}
 	}
 
-	log(`Cycle summary — Processed: ${cycleProcessedCount}, Reported: ${cycleReportedCount}, Skipped: ${cycleSkippedCount}, Errors: ${cycleErrorCounts}`);
-	log(`====================== REPORTING CYCLE #${cycleId} COMPLETED ======================`);
+	logger.log(`Summary » Processed: ${cycleProcessedCount}; Reported: ${cycleReportedCount}; Skipped: ${cycleSkippedCount}; Errors: ${cycleErrorCounts}`);
+	logger.log(`====================== REPORTING CYCLE #${cycleId} COMPLETED ======================`);
 	cycleId++;
 };
 
 (async () => {
-	console.log(logo(1, `Cloudflare WAF To AbuseIPDB (v${version})`));
-	log('💙 If you find this helpful, please consider supporting me. I would really appreciate it! https://sefinek.net/donate');
+	console.log(banner(`Cloudflare WAF To AbuseIPDB (v${version})`));
+	logger.log('If you like it, consider supporting me — I\'d really appreciate it! https://sefinek.net/donate');
 
 	// Auto updates
 	if (MAIN.AUTO_UPDATE_ENABLED && MAIN.AUTO_UPDATE_SCHEDULE && MAIN.SERVER_ID !== 'development') {
@@ -214,7 +213,7 @@ const processData = async () => {
 	// Bulk Report
 	await loadBufferFromFile();
 	if (BULK_REPORT_BUFFER.size > 0 && !ABUSE_STATE.isLimited) {
-		log(`Found ${BULK_REPORT_BUFFER.size} IPs in buffer after restart. Sending bulk report...`);
+		logger.log(`Found ${BULK_REPORT_BUFFER.size} IPs in buffer after restart. Sending bulk report...`);
 		await sendBulkReport();
 	}
 
@@ -227,8 +226,8 @@ const processData = async () => {
 	new CronJob(MAIN.REPORT_SCHEDULE, processData, null, true);
 
 	// Ready
-	await sendWebhook(`[${name}](${repoFullUrl}) was successfully started!`, 0x59D267);
-	log(`All set! ${MAIN.RUN_ON_START ? 'First cycle will run shortly' : 'Waiting for the first scheduled cycle'}...`, 1);
+	await logger.webhook(`[${name}](${repoFullUrl}) was successfully started!`, 0x59D267);
+	logger.log(`All set! ${MAIN.RUN_ON_START ? 'Starting first cycle shortly' : 'Waiting for the first scheduled cycle'}...`, 1);
 	process.send?.('ready');
 
 	// Run on start?

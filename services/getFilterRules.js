@@ -1,5 +1,5 @@
-const axios = require('../scripts/services/axios.js');
-const log = require('../scripts/log.js');
+const { axios } = require('../scripts/services/axios.js');
+const logger = require('../scripts/logger.js');
 
 module.exports = async () => {
 	try {
@@ -14,7 +14,7 @@ module.exports = async () => {
 			throw new Error('Sefinek API error: Response is missing expected arrays');
 		}
 
-		log(`Filter rules loaded from api.sefinek.net. Last update: ${lastUpdate}`, 1);
+		logger.log(`Filter rules loaded from api.sefinek.net. Last update: ${lastUpdate}`, 1);
 		return { userAgents, domains, endpoints, imgExtensions, lastUpdate };
 	} catch (err) {
 		throw new Error(`Failed to fetch filter rules: ${err.message}`);

@@ -1,9 +1,9 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const PAYLOAD = require('./generateFirewallQuery.js');
-const axios = require('../scripts/services/axios.js');
+const { axios } = require('../scripts/services/axios.js');
 const headers = require('./headers.js');
-const log = require('../scripts/log.js');
+const logger = require('../scripts/logger.js');
 
 const fetchCloudflareEvents = async () => {
 	try {
@@ -12,10 +12,10 @@ const fetchCloudflareEvents = async () => {
 		const events = data?.data?.viewer?.zones?.[0]?.firewallEventsAdaptive || [];
 		const filtered = events.filter(e => e.source === 'l7ddos');
 
-		log(`Fetched ${events.length} events from Cloudflare (filtered ${filtered.length} L7 DDoS)`, 1);
+		logger.log(`Fetched ${events.length} events from Cloudflare (filtered ${filtered.length} L7 DDoS)`, 1);
 		return filtered;
 	} catch (err) {
-		log(`Cloudflare API error: ${err.message}`, 3);
+		logger.log(`Cloudflare API error: ${err.message}`, 3);
 		return [];
 	}
 };

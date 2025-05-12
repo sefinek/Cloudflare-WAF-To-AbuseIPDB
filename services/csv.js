@@ -3,7 +3,7 @@ const path = require('node:path');
 const { existsSync } = require('node:fs');
 const { parse } = require('csv-parse/sync');
 const { stringify } = require('csv-stringify/sync');
-const log = require('../scripts/log.js');
+const logger = require('../scripts/logger.js');
 
 const CSV_FILE = path.join(__dirname, '..', 'tmp', 'reported_ips.csv');
 const MAX_CSV_SIZE = 4 * 1024 * 1024;
@@ -25,7 +25,7 @@ const ensureCSVExists = async () => {
 	if (!existsSync(CSV_FILE)) {
 		await fs.mkdir(path.dirname(CSV_FILE), { recursive: true });
 		await fs.writeFile(CSV_FILE, stringify([], { header: true, columns: CSV_COLUMNS }));
-		log(`Created missing CSV file: ${CSV_FILE}`, 1);
+		logger.log(`Created missing CSV file: ${CSV_FILE}`, 1);
 	}
 };
 
@@ -34,10 +34,10 @@ const checkCSVSize = async () => {
 		const stats = await fs.stat(CSV_FILE);
 		if (stats.size > MAX_CSV_SIZE) {
 			await fs.writeFile(CSV_FILE, stringify([], { header: true, columns: CSV_COLUMNS }));
-			log(`CSV file exceeded ${MAX_CSV_SIZE / (1024 * 1024)} MB. Cleared.`, 1);
+			logger.log(`CSV file exceeded ${MAX_CSV_SIZE / (1024 * 1024)} MB. Cleared.`, 1);
 		}
 	} catch (err) {
-		log(`Failed to check CSV size: ${err.stack}`, 3, true);
+		logger.log(`Failed to check CSV size: ${err.stack}`, 3, true);
 	}
 };
 
@@ -68,7 +68,7 @@ const logToCSV = async (event, status = 'N/A', sefinekAPI = false) => {
 		const line = stringify([row], { header: false, columns: CSV_COLUMNS });
 		await fs.appendFile(CSV_FILE, line);
 	} catch (err) {
-		log(`Failed to append to CSV: ${err.stack}`, 3, true);
+		logger.log(`Failed to append to CSV: ${err.stack}`, 3, true);
 	}
 };
 
@@ -96,14 +96,14 @@ const readReportedIPs = async () => {
 			sefinekAPI: row['Sefinek API'] === 'true',
 		}));
 	} catch (err) {
-		log(`Failed to read CSV: ${err.stack}`, 3, true);
+		logger.log(`Failed to read CSV: ${err.stack}`, 3, true);
 		return [];
 	}
 };
 
 const updateSefinekAPIInCSV = async (rayId, reportedToSefinekAPI) => {
 	if (!existsSync(CSV_FILE)) {
-		log('CSV file does not exist', 2);
+		logger.log('CSV file does not exist', 2);
 		return;
 	}
 
@@ -128,7 +128,7 @@ const updateSefinekAPIInCSV = async (rayId, reportedToSefinekAPI) => {
 			await fs.writeFile(CSV_FILE, output);
 		}
 	} catch (err) {
-		log(`Failed to update CSV: ${err.stack}`, 3, true);
+		logger.log(`Failed to update CSV: ${err.stack}`, 3, true);
 	}
 };
 
