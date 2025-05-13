@@ -142,7 +142,6 @@ const processData = async () => {
 	await refreshServerIPs();
 	const ips = getServerIPs();
 	if (!Array.isArray(ips)) return logger.log(`getServerIPs() returned an invalid result: ${ips}`, 3);
-	logger.log(`Collected ${ips.length} of your IP address${ips.length !== 1 ? 'es' : ''} (public & interface)${MAIN.SERVER_ID === 'development' ? `: ${ips.join(', ')}` : ''}`, 1);
 
 	// Cache
 	const [whitelist, reportedIPs] = await Promise.all([
