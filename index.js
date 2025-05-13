@@ -3,7 +3,7 @@
 
 const { CronJob } = require('cron');
 const banner = require('./scripts/banners/cloudflare.js');
-const { name, repoFullUrl } = require('./scripts/repo.js');
+const { name, version, repoFullUrl } = require('./scripts/repo.js');
 const { axios } = require('./scripts/services/axios.js');
 const { refreshServerIPs, getServerIPs } = require('./scripts/services/ipFetcher.js');
 const { saveBufferToFile, loadBufferFromFile, sendBulkReport, BULK_REPORT_BUFFER } = require('./scripts/services/bulk.js');
@@ -14,7 +14,6 @@ const { logToCSV, readReportedIPs } = require('./services/csv.js');
 const getFilters = require('./services/getFilterRules.js');
 const { MAIN, GENERATE_COMMENT } = require('./config.js');
 const logger = require('./scripts/logger.js');
-const { version } = require('./scripts/repo');
 
 const ABUSE_STATE = { isLimited: false, isBuffering: false, sentBulk: false };
 const RATE_LIMIT_LOG_INTERVAL = 10 * 60 * 1000;
