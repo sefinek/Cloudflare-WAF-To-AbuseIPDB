@@ -22,7 +22,7 @@ exports.MAIN = {
 
 	/* --------------------------- Automatic Updates --------------------------- */
 	AUTO_UPDATE_ENABLED: true, // Automatic updates: true to enable auto-update via 'git pull', false to disable.
-	AUTO_UPDATE_SCHEDULE: '15,17,18,20 * * *', // CRON schedule for automatic script updates. Default: every day at 15:00, 17:00, 18:00, 20:00
+	AUTO_UPDATE_SCHEDULE: '0 15,17,18,20 * * *', // CRON schedule for automatic script updates. Default: every day at 15:00, 17:00, 18:00, 20:00
 
 	/* --------------------------- Discord Webhooks --------------------------- */
 	DISCORD_WEBHOOK_ENABLED: false, // Enables sending Discord webhooks with error reports, execution status, and other events.
