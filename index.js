@@ -1,3 +1,6 @@
+//   Copyright 2024-2025 © by Sefinek. All Rights Reserved.
+//                     https://sefinek.net
+
 const { CronJob } = require('cron');
 const banner = require('./scripts/banners/cloudflare.js');
 const { name, repoFullUrl } = require('./scripts/repo.js');
