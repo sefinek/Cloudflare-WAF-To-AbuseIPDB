@@ -1,7 +1,7 @@
 exports.MAIN = {
 	/* --------------------------- Server --------------------------- */
-	SERVER_ID: null, // Use 'development' only during programming or testing. Setting it to 'production' has no effect. If you don't want to define the name at all, use null (not as a string).
-	RUN_ON_START: true, // Should the reporting function run immediately after the script starts?
+	SERVER_ID: null, // Server identifier (e.g., 'hp630-terminal', 'plcluster', 'de1'). Use 'development' for testing only. 'production' has no effect. Use null to leave it unset.
+	RUN_ON_START: true, // Should the reporting function run immediately on script start?
 
 	/* --------------------------- Network --------------------------- */
 	IP_ASSIGNMENT: 'dynamic', // IP assignment type: 'static' for a fixed IP, 'dynamic' if it may change over time.
