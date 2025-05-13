@@ -16,7 +16,7 @@ exports.MAIN = {
 	/* --------------------------- Secret keys --------------------------- */
 	CLOUDFLARE_ZONE_ID: '00000000000000000000000000000000', // https://github.com/sefinek/Cloudflare-WAF-To-AbuseIPDB/tree/main?tab=readme-ov-file#cloudflare_zone_id
 	CLOUDFLARE_API_KEY: '0000000000000000000000000000000000000000', // https://github.com/sefinek/Cloudflare-WAF-To-AbuseIPDB/tree/main?tab=readme-ov-file#cloudflare_api_key
-	ABUSEIPDB_API_KEY: '00000000000000000000000000000000000000000000000000000000000000000000000000000000', // https://github.com/sefinek/Cloudflare-WAF-To-AbuseIPDB/tree/main?tab=readme-ov-file#abuseipdb_api_key
+	ABUSEIPDB_API_KEY: '00000000000000000000000000000000000000000000000000000000000000000000000000000000', // https://www.abuseipdb.com/account/api
 
 	/* --------------------------- Cycles --------------------------- */
 	REPORT_SCHEDULE: '0 */2 * * *', // CRON schedule for sending reports to AbuseIPDB.
