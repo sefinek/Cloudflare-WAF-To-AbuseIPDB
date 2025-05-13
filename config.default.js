@@ -20,7 +20,7 @@ exports.MAIN = {
 
 	/* --------------------------- Cycles --------------------------- */
 	REPORT_SCHEDULE: '0 */2 * * *', // CRON schedule for sending reports to AbuseIPDB.
-	REPORTED_IP_COOLDOWN: 8 * 60 * 60 * 1000, // Minimum time between reports of the same IP (default: 8h). Must be >= 15 minutes.
+	IP_REPORT_COOLDOWN: 8 * 60 * 60 * 1000, // Minimum time between reports of the same IP (default: 8h). Must be >= 15 minutes.
 	MAX_URL_LENGTH: 850, // Maximum allowed URI length. Longer URLs will be rejected.
 	SUCCESS_COOLDOWN: 10, // Additional delay (in ms) after each successful report to avoid overloading the AbuseIPDB API.
 

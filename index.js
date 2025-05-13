@@ -129,7 +129,7 @@ const isIPReportedRecently = (event, reportedIPs) => {
 	return reportedIPs.some(entry =>
 		(entry.ip === event.clientIP || entry.rayId === event.rayName) &&
 		knownStatuses.has(entry.status) &&
-		(now - entry.timestamp) < MAIN.REPORTED_IP_COOLDOWN
+		(now - entry.timestamp) < MAIN.IP_REPORT_COOLDOWN
 	) ? { recentlyReported: true } : { recentlyReported: false };
 };
 
