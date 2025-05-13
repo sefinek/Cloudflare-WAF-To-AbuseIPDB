@@ -1,4 +1,4 @@
-const { SEFINEK_API } = require('./headers.js');
+const { SEFINEK_API } = require('../scripts/headers.js');
 const { axios } = require('../scripts/services/axios.js');
 const { readReportedIPs, updateSefinekAPIInCSV } = require('./csv.js');
 const { getServerIPs } = require('../scripts/services/ipFetcher.js');

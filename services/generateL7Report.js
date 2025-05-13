@@ -2,7 +2,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const PAYLOAD = require('./generateFirewallQuery.js');
 const { axios } = require('../scripts/services/axios.js');
-const headers = require('./headers.js');
+const headers = require('../scripts/headers.js');
 const logger = require('../scripts/logger.js');
 
 const fetchCloudflareEvents = async () => {
