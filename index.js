@@ -118,7 +118,7 @@ const reportIP = async (event, categories, comment) => {
 			return { success: false, code: 'ALREADY_IN_BUFFER' };
 		}
 
-		logger.log(`Failed to report ${event.clientIP}; ${err.response?.data?.errors ? JSON.stringify(err.response.data.errors) : err.message}`, 3);
+		logger.log(`Failed to report ${event.clientIP}; ${err.response?.data?.errors ? JSON.stringify(err.response.data.errors) : err.message}`, status === 429 ? 0 : 3);
 		return { success: false, code: 'FAILED' };
 	}
 };
@@ -143,7 +143,7 @@ const processData = async () => {
 		logger.log(`getServerIPs() returned an invalid result: ${ips}`, 3);
 		return;
 	}
-	logger.log(`Collected ${ips.length} unique IP address${ips.length !== 1 ? 'es' : ''} (public+interface)`, 1);
+	logger.log(`Collected ${ips.length} unique IP address${ips.length !== 1 ? 'es' : ''} (public+interface)${MAIN.SERVER_ID === 'development' ? `: ${ips.join(', ')}` : ''}`, 1);
 
 	// Cache
 	const [whitelist, reportedIPs] = await Promise.all([

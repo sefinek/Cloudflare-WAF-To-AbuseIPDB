@@ -1,8 +1,8 @@
+const { SEFINEK_API } = require('./headers.js');
 const { axios } = require('../scripts/services/axios.js');
 const { readReportedIPs, updateSefinekAPIInCSV } = require('./csv.js');
 const { getServerIPs } = require('../scripts/services/ipFetcher.js');
 const logger = require('../scripts/logger.js');
-const { SEFIN_API_SECRET_TOKEN } = require('../config.js').MAIN;
 
 module.exports = async () => {
 	const reportedIPs = (await readReportedIPs() || []).filter(x => x.status === 'REPORTED' && !getServerIPs().includes(x.ip) && !x.sefinekAPI);
@@ -29,17 +29,19 @@ module.exports = async () => {
 				country: ip.country,
 				timestamp: ip.timestamp,
 			})),
-		}, { headers: { 'X-API-Key': SEFIN_API_SECRET_TOKEN } });
+		}, { headers: SEFINEK_API });
 
-		logger.log(`Sefinek API: Successfully sent ${uniqueLogs.length} logs! Status: ${res.status}`, 1);
-
-		for (const ip of uniqueLogs) {
-			await updateSefinekAPIInCSV(ip.rayId, true);
+		if (res.data.success) {
+			logger.log(`Sefinek API (status: ${res.status}): Successfully sent ${uniqueLogs.length} logs`, 1);
+		} else {
+			logger.log(`Sefinek API (status: ${res.status}): ${res.data.message || 'Something went wrong'}`, 2);
 		}
+
+		await Promise.all(uniqueLogs.map(ip => updateSefinekAPIInCSV(ip.rayId, true)));
 	} catch (err) {
-		if (!err.response?.data?.message?.includes('No valid or unique')) {
-			const msg = err.response?.data?.message[0] || err.response?.data?.message || err.message;
-			logger.log(`Sefinek API: Failed to send logs! Status: ${err.response?.status ?? 'Unknown'}; Message: ${typeof msg === 'object' ? JSON.stringify(msg) : msg}`, 3);
-		}
+		if (err.response?.data?.message?.includes('No valid or unique')) return;
+		const rawMsg = err.response?.data?.message;
+		const msg = Array.isArray(rawMsg) ? rawMsg[0] : (typeof rawMsg === 'object' ? JSON.stringify(rawMsg) : rawMsg || err.message);
+		logger.log(`Sefinek API (status: ${err.response?.status ?? 'unknown'}): Failed to send logs! Message: ${typeof msg === 'object' ? JSON.stringify(msg) : msg}`, 3);
 	}
 };

@@ -14,7 +14,7 @@ module.exports = async () => {
 			throw new Error('Sefinek API error: Response is missing expected arrays');
 		}
 
-		logger.log(`Filter rules loaded from api.sefinek.net. Last update: ${lastUpdate}`, 1);
+		logger.log(`Filter rules loaded from api.sefinek.net, last update: ${lastUpdate}`, 1);
 		return { userAgents, domains, endpoints, imgExtensions, lastUpdate };
 	} catch (err) {
 		throw new Error(`Failed to fetch filter rules: ${err.message}`);

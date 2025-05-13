@@ -4,12 +4,13 @@ exports.MAIN = {
 	RUN_ON_START: true, // Should the reporting function run immediately after the script starts?
 
 	/* --------------------------- Network --------------------------- */
-	IP_REFRESH_SCHEDULE: '0 */6 * * *', // CRON: How often the script should check the IP address assigned by the ISP to prevent accidental self-reporting. If you have a static IP, you can set it to '0 0 1 * *' (once a month). Default: every 6 hours
-	IPv6_SUPPORT: true, // Specifies whether the device has an assigned IPv6 address.
+	IP_ASSIGNMENT: 'dynamic', // IP assignment type: 'static' for a fixed IP, 'dynamic' if it may change over time.
+	IP_REFRESH_SCHEDULE: '0 */6 * * *', // CRON schedule for checking the public IP assigned by your ISP. Used only with dynamic IPs to prevent accidental self-reporting. If IP_ASSIGNMENT is set to 'static', the script will check your IP only once.
+	IPv6_SUPPORT: true, // IPv6 support: true if the device has a globally routable address assigned by the ISP.
 
 	/* --------------------------- Automatic Updates --------------------------- */
-	AUTO_UPDATE_ENABLED: true, // Do you want the script to automatically update to the latest version using 'git pull'? (true = enabled, false = disabled)
-	AUTO_UPDATE_SCHEDULE: '0 18 * * *', // CRON: Schedule for automatic script updates. Default: every day at 18:00
+	AUTO_UPDATE_ENABLED: true, // Automatic updates: true to enable auto-update via 'git pull', false to disable.
+	AUTO_UPDATE_SCHEDULE: '15,17,18,20 * * *', // CRON schedule for automatic script updates. Default: every day at 15:00, 17:00, 18:00, 20:00
 
 	/* --------------------------- Secret keys --------------------------- */
 	CLOUDFLARE_ZONE_ID: '00000000000000000000000000000000', // https://github.com/sefinek/Cloudflare-WAF-To-AbuseIPDB/tree/main?tab=readme-ov-file#cloudflare_zone_id
@@ -17,33 +18,20 @@ exports.MAIN = {
 	ABUSEIPDB_API_KEY: '00000000000000000000000000000000000000000000000000000000000000000000000000000000', // https://github.com/sefinek/Cloudflare-WAF-To-AbuseIPDB/tree/main?tab=readme-ov-file#abuseipdb_api_key
 
 	/* --------------------------- Cycles --------------------------- */
-	// CRON: Schedule for running cron jobs for reporting to AbuseIPDB.
-	REPORT_SCHEDULE: '0 */2 * * *',
-
-	// The minimum time that must pass after reporting an IP address before it can be reported again.
-	// The required time is >= 15 minutes, according to AbuseIPDB API limits.
-	REPORTED_IP_COOLDOWN: 8 * 60 * 60 * 1000, // 8h
-
-	// The maximum URI length that can be reported to AbuseIPDB. If Cloudflare returns a longer URI, the API request will fail.
-	MAX_URL_LENGTH: 800,
-
-	// Additional delay (in milliseconds) after each successful IP report to avoid overloading the AbuseIPDB API.
-	SUCCESS_COOLDOWN: 10,
+	REPORT_SCHEDULE: '0 */2 * * *', // CRON schedule for sending reports to AbuseIPDB.
+	REPORTED_IP_COOLDOWN: 8 * 60 * 60 * 1000, // Minimum time between reports of the same IP (default: 8h). Must be >= 15 minutes.
+	MAX_URL_LENGTH: 850, // Maximum allowed URI length. Longer URLs will be rejected.
+	SUCCESS_COOLDOWN: 10, // Additional delay (in ms) after each successful report to avoid overloading the AbuseIPDB API.
 
 	/* --------------------------- Discord Webhooks --------------------------- */
-	DISCORD_WEBHOOKS_ENABLED: false, // Should the script send webhooks with information about errors, execution status, and other events?
-	DISCORD_WEBHOOKS_URL: '',
-	DISCORD_WEBHOOK_USERNAME: 'SERVER_ID', // The name displayed as the message author on Discord. If you don't want to set it, leave the value as null. Providing SERVER_ID as a string will display this.MAIN.SERVER_ID.
+	DISCORD_WEBHOOK_ENABLED: false, // Enables sending Discord webhooks with error reports, execution status, and other events.
+	DISCORD_WEBHOOK_URL: '',
+	DISCORD_WEBHOOK_USERNAME: 'SERVER_ID', // Username shown as the message author. Use null for default. 'SERVER_ID' will resolve to this.MAIN.SERVER_ID.
 
 	/* --------------------------- Sefinek API --------------------------- */
-	// Report IP addresses to api.sefinek.net to support the development of the repository at https://github.com/sefinek/Malicious-IP-Addresses. SECRET_TOKEN is required if true.
-	SEFIN_API_REPORTING: false,
-
-	// Secret key for api.sefinek.net
+	SEFIN_API_REPORTING: false, // Enables reporting of IP addresses to api.sefinek.net (https://github.com/sefinek/Malicious-IP-Addresses). Requires SEFIN_API_SECRET_TOKEN.
 	SEFIN_API_SECRET_TOKEN: '',
-
-	// How often should the log (reported_ips.csv) be analyzed and sent to the Sefinek API?
-	SEFIN_API_REPORT_SCHEDULE: '0 */2 * * *',
+	SEFIN_API_REPORT_SCHEDULE: '0 */2 * * *', // CRON schedule for sending data to the Sefinek API.
 };
 
 exports.GENERATE_COMMENT = ({ action, clientAsn, clientASNDescription, clientRequestHTTPProtocol, clientRequestHTTPMethodName, clientRequestHTTPHost, clientRequestPath, clientRequestQuery, datetime, rayName, ruleId, userAgent, source, clientCountryName }) => {
