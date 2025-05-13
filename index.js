@@ -203,8 +203,7 @@ const processData = async () => {
 };
 
 (async () => {
-	console.log(banner(`Cloudflare WAF To AbuseIPDB (v${version})`));
-	logger.log('If you like it, consider supporting me — I\'d really appreciate it! https://sefinek.net/donate');
+	banner(`Cloudflare WAF To AbuseIPDB (v${version})`);
 
 	// Auto updates
 	if (MAIN.AUTO_UPDATE_ENABLED && MAIN.AUTO_UPDATE_SCHEDULE && MAIN.SERVER_ID !== 'development') {
