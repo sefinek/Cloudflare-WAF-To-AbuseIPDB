@@ -9,10 +9,6 @@ exports.MAIN = {
 	IP_REFRESH_SCHEDULE: '0 */6 * * *', // CRON schedule for checking the public IP assigned by your ISP. Used only with dynamic IPs to prevent accidental self-reporting. If IP_ASSIGNMENT is set to 'static', the script will check your IP only once.
 	IPv6_SUPPORT: true, // IPv6 support: true if the device has a globally routable address assigned by the ISP.
 
-	/* --------------------------- Automatic Updates --------------------------- */
-	AUTO_UPDATE_ENABLED: true, // Automatic updates: true to enable auto-update via 'git pull', false to disable.
-	AUTO_UPDATE_SCHEDULE: '15,17,18,20 * * *', // CRON schedule for automatic script updates. Default: every day at 15:00, 17:00, 18:00, 20:00
-
 	/* --------------------------- Secret keys --------------------------- */
 	CLOUDFLARE_ZONE_ID: '00000000000000000000000000000000', // https://github.com/sefinek/Cloudflare-WAF-To-AbuseIPDB/tree/main?tab=readme-ov-file#cloudflare_zone_id
 	CLOUDFLARE_API_KEY: '0000000000000000000000000000000000000000', // https://github.com/sefinek/Cloudflare-WAF-To-AbuseIPDB/tree/main?tab=readme-ov-file#cloudflare_api_key
@@ -20,9 +16,13 @@ exports.MAIN = {
 
 	/* --------------------------- Cycles --------------------------- */
 	REPORT_SCHEDULE: '0 */2 * * *', // CRON schedule for sending reports to AbuseIPDB.
-	IP_REPORT_COOLDOWN: 8 * 60 * 60 * 1000, // Minimum time between reports of the same IP (default: 8h). Must be >= 15 minutes.
+	IP_REPORT_COOLDOWN: 8 * 60 * 60 * 1000, // Minimum time between reports of the same IP. Must be >= 15 minutes. Do not set values like 1 hour, as it wouldn't make sense due to rate limits.
 	MAX_URL_LENGTH: 850, // Maximum allowed URI length. Longer URLs will be rejected.
 	SUCCESS_COOLDOWN: 10, // Additional delay (in ms) after each successful report to avoid overloading the AbuseIPDB API.
+
+	/* --------------------------- Automatic Updates --------------------------- */
+	AUTO_UPDATE_ENABLED: true, // Automatic updates: true to enable auto-update via 'git pull', false to disable.
+	AUTO_UPDATE_SCHEDULE: '15,17,18,20 * * *', // CRON schedule for automatic script updates. Default: every day at 15:00, 17:00, 18:00, 20:00
 
 	/* --------------------------- Discord Webhooks --------------------------- */
 	DISCORD_WEBHOOK_ENABLED: false, // Enables sending Discord webhooks with error reports, execution status, and other events.
