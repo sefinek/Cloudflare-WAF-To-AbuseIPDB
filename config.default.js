@@ -1,6 +1,6 @@
 exports.MAIN = {
 	/* --------------------------- Server --------------------------- */
-	SERVER_ID: null, // Server identifier (e.g., 'hp630-terminal', 'plcluster', 'de1'). Use 'development' for testing only. 'production' has no effect. Use null to leave it unset.
+	SERVER_ID: null, // Server identifier (e.g., 'hp-terminal', 'pl-cluster', 'de1'). Use 'development' for testing only. 'production' has no effect. Use null to leave it unset.
 	RUN_ON_START: true, // Should the reporting function run immediately on script start?
 
 	/* --------------------------- Network --------------------------- */
