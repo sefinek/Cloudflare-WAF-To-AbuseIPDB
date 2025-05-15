@@ -1,43 +1,38 @@
-exports.CONFIG = {
-	MAIN: {
-		NODE_ENV: 'production', // Environment mode: 'production' or 'development'
-		CLOUDFLARE_ZONE_ID: '00000000000000000000000000000000', // API key for Cloudflare access
-		CLOUDFLARE_API_KEY: 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX', // https://dash.cloudflare.com/profile/api-tokens
-		ABUSEIPDB_API_KEY: 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX', // API key for reporting malicious IPs to AbuseIPDB
-		RUN_ON_START: true, // Should the reporting function run immediately after the script starts?
-		IPv6_SUPPORT: true, // Specifies whether the device has been assigned an IPv6 address.
-	},
+exports.MAIN = {
+	/* --------------------------- Server --------------------------- */
+	SERVER_ID: null, // Server identifier (e.g., 'hp-terminal', 'pl-cluster', 'de1'). Use 'development' for testing only. 'production' has no effect. Use null to leave it unset.
+	EXTENDED_LOGS: false, // Specifies whether the script should display additional information in the logs.
+	RUN_ON_START: true, // Should the reporting function run immediately on script start?
 
-	CYCLES: {
-		// CRON: Schedule for running cron jobs for reporting to AbuseIPDB.
-		REPORT_SCHEDULE: '0 */3 * * *',
+	/* --------------------------- Network --------------------------- */
+	IP_ASSIGNMENT: 'dynamic', // IP assignment type: 'static' for a fixed IP, 'dynamic' if it may change over time.
+	IP_REFRESH_SCHEDULE: '0 */6 * * *', // Cron schedule for checking the public IP assigned by your ISP. Used only with dynamic IPs to prevent accidental self-reporting. If IP_ASSIGNMENT is set to 'static', the script will check your IP only once.
+	IPv6_SUPPORT: true, // IPv6 support: true if the device has a globally routable address assigned by the ISP.
 
-		// The minimum time (in hours) that must pass after reporting an IP address before it can be reported again.
-		// The required time is >= 15 minutes, according to AbuseIPDB API limits.
-		REPORTED_IP_COOLDOWN: 6 * 60 * 60 * 1000,
+	/* --------------------------- Secret keys --------------------------- */
+	CLOUDFLARE_ZONE_ID: '00000000000000000000000000000000', // https://github.com/sefinek/Cloudflare-WAF-To-AbuseIPDB/tree/main?tab=readme-ov-file#cloudflare_zone_id
+	CLOUDFLARE_API_KEY: '0000000000000000000000000000000000000000', // https://github.com/sefinek/Cloudflare-WAF-To-AbuseIPDB/tree/main?tab=readme-ov-file#cloudflare_api_key
+	ABUSEIPDB_API_KEY: '00000000000000000000000000000000000000000000000000000000000000000000000000000000', // https://www.abuseipdb.com/account/api
 
-		// The maximum URI length that can be reported to AbuseIPDB.
-		// If Cloudflare returns a longer URI, the API request will fail.
-		MAX_URL_LENGTH: 800,
+	/* --------------------------- Cycles --------------------------- */
+	REPORT_SCHEDULE: '0 */2 * * *', // Cron schedule for sending reports to AbuseIPDB.
+	IP_REPORT_COOLDOWN: 8 * 60 * 60 * 1000, // Minimum time between reports of the same IP. Must be >= 15 minutes. Do not set values like 1 hour, as it wouldn't make sense due to rate limits.
+	MAX_URL_LENGTH: 850, // Maximum allowed URI length. Longer URLs will be rejected.
+	SUCCESS_COOLDOWN: 10, // Additional delay (in ms) after each successful report to avoid overloading the AbuseIPDB API.
 
-		// Additional delay (in milliseconds) after each successful IP report to avoid overloading the AbuseIPDB API.
-		SUCCESS_COOLDOWN: 20,
+	/* --------------------------- Automatic Updates --------------------------- */
+	AUTO_UPDATE_ENABLED: false, // Automatic updates: true to enable auto-update via 'git pull', false to disable.
+	AUTO_UPDATE_SCHEDULE: '0 15,17,18,20 * * *', // Cron schedule for automatic script updates. Default: every day at 15:00, 17:00, 18:00, 20:00
 
-		// CRON: Interval for refreshing your IP address. Default: every 6 hours
-		// This ensures that WAF violations originating from your IP address are not reported to AbuseIPDB.
-		IP_REFRESH_SCHEDULE: '0 */6 * * *',
-	},
+	/* --------------------------- Discord Webhooks --------------------------- */
+	DISCORD_WEBHOOK_ENABLED: false, // Enables sending Discord webhooks with error reports, execution status, and other events.
+	DISCORD_WEBHOOK_URL: '',
+	DISCORD_WEBHOOK_USERNAME: 'SERVER_ID', // Username shown as the message author. Use null for default. 'SERVER_ID' will resolve to this.MAIN.SERVER_ID.
 
-	SEFINEK_API: {
-		// Report IP addresses to api.sefinek.net to support the development of the repository at https://github.com/sefinek/Malicious-IP-Addresses. SECRET_TOKEN is required if true.
-		ENABLED: false,
-
-		// Secret key for api.sefinek.net
-		SECRET_TOKEN: '',
-
-		// How often should the log (reported_ips.csv) be analyzed and sent to the Sefinek API?
-		REPORT_SCHEDULE: '0 */2 * * *',
-	},
+	/* --------------------------- Sefinek API --------------------------- */
+	SEFIN_API_REPORTING: false, // Enables reporting of IP addresses to api.sefinek.net (https://github.com/sefinek/Malicious-IP-Addresses). Requires SEFIN_API_SECRET_TOKEN.
+	SEFIN_API_SECRET_TOKEN: '',
+	SEFIN_API_REPORT_SCHEDULE: '0 */2 * * *', // CRON schedule for sending data to the Sefinek API.
 };
 
 exports.GENERATE_COMMENT = ({ action, clientAsn, clientASNDescription, clientRequestHTTPProtocol, clientRequestHTTPMethodName, clientRequestHTTPHost, clientRequestPath, clientRequestQuery, datetime, rayName, ruleId, userAgent, source, clientCountryName }) => {
@@ -62,5 +57,5 @@ exports.GENERATE_COMMENT = ({ action, clientAsn, clientASNDescription, clientReq
 ${reportLines.join('\n')}
 
 This report was generated by:
-https://github.com/sefinek/Cloudflare-WAF-To-AbuseIPDB`; // Please, don't delete this URL. I would be very grateful! Thank you. 💙
+https://github.com/sefinek/Cloudflare-WAF-To-AbuseIPDB`; // Please don't delete this URL, I'd be very grateful. Thank you! 💙
 };

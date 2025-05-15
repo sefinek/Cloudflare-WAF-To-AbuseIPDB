@@ -1,8 +1,8 @@
-const { MAIN } = require('../config.js').CONFIG;
+const { CLOUDFLARE_ZONE_ID } = require('../config.js').MAIN;
 
 module.exports = limit => {
 	const variables = {
-		zoneTag: MAIN.CLOUDFLARE_ZONE_ID,
+		zoneTag: CLOUDFLARE_ZONE_ID,
 		filter: {
 			datetime_geq: new Date(Date.now() - (60 * 60 * 12 * 1000)).toISOString(),
 			// datetime_leq: new Date(Date.now() - (60 * 60 * 8 * 1000)).toISOString(),

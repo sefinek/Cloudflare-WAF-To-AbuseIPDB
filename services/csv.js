@@ -1,79 +1,135 @@
-const fs = require('node:fs');
+const fs = require('node:fs/promises');
 const path = require('node:path');
-const log = require('../utils/log.js');
+const { existsSync } = require('node:fs');
+const { parse } = require('csv-parse/sync');
+const { stringify } = require('csv-stringify/sync');
+const logger = require('../scripts/logger.js');
 
-const CSV_FILE_PATH = path.join(__dirname, '..', 'reported_ips.csv');
-const MAX_CSV_SIZE_BYTES = 4 * 1024 * 1024; // 4 MB
-const CSV_HEADER = 'Timestamp,CF RayID,IP,Country,Hostname,Endpoint,User-Agent,Action taken,Status,Sefinek API\n';
+const CSV_FILE = path.join(__dirname, '..', 'tmp', 'reported_ips.csv');
+const MAX_CSV_SIZE = 4 * 1024 * 1024;
 
-if (!fs.existsSync(CSV_FILE_PATH)) fs.writeFileSync(CSV_FILE_PATH, CSV_HEADER);
+const CSV_COLUMNS = [
+	'Timestamp',
+	'CF RayID',
+	'IP',
+	'Country',
+	'Hostname',
+	'Endpoint',
+	'User-Agent',
+	'Action taken',
+	'Status',
+	'Sefinek API',
+];
 
-const checkCSVSize = () => {
-	const stats = fs.statSync(CSV_FILE_PATH);
-	if (stats.size > MAX_CSV_SIZE_BYTES) {
-		fs.writeFileSync(CSV_FILE_PATH, CSV_HEADER);
-		log(0, `The CSV file size exceeded ${MAX_CSV_SIZE_BYTES / (1024 * 1024)} MB. To save memory, its contents have been removed.`);
+const ensureCSVExists = async () => {
+	if (!existsSync(CSV_FILE)) {
+		await fs.mkdir(path.dirname(CSV_FILE), { recursive: true });
+		await fs.writeFile(CSV_FILE, stringify([], { header: true, columns: CSV_COLUMNS }));
+		logger.log(`Created missing CSV file: ${CSV_FILE}`, 1);
 	}
 };
 
-const escapeCSVValue = value => {
-	if (typeof value === 'string' && value.includes(',')) return `"${value.replace(/"/g, '""')}"`;
-	return value || '';
+const checkCSVSize = async () => {
+	try {
+		const stats = await fs.stat(CSV_FILE);
+		if (stats.size > MAX_CSV_SIZE) {
+			await fs.writeFile(CSV_FILE, stringify([], { header: true, columns: CSV_COLUMNS }));
+			logger.log(`CSV file exceeded ${MAX_CSV_SIZE / (1024 * 1024)} MB. Cleared.`, 1);
+		}
+	} catch (err) {
+		logger.log(`Failed to check CSV size: ${err.stack}`, 3, true);
+	}
 };
 
-const logToCSV = (rayId, ip, country = 'N/A', hostname, endpoint, userAgent, actionTaken = 'N/A', status = 'N/A', sefinekAPI) => {
-	checkCSVSize();
-	const logLine = `${new Date().toISOString()},${rayId},${ip},${country},${hostname},${escapeCSVValue(endpoint)},${escapeCSVValue(userAgent)},${actionTaken.toUpperCase()},${status},${sefinekAPI || false}`;
-	fs.appendFileSync(CSV_FILE_PATH, logLine + '\n');
+const logToCSV = async (event, status = 'N/A', sefinekAPI = false) => {
+	await ensureCSVExists();
+	await checkCSVSize();
+
+	const {
+		rayName, clientIP, clientCountryName,
+		clientRequestHTTPHost, clientRequestPath,
+		userAgent, action,
+	} = event;
+
+	const row = {
+		'Timestamp': new Date().toISOString(),
+		'CF RayID': rayName,
+		'IP': clientIP,
+		'Country': clientCountryName,
+		'Hostname': clientRequestHTTPHost,
+		'Endpoint': clientRequestPath,
+		'User-Agent': userAgent,
+		'Action taken': action.toUpperCase(),
+		'Status': status,
+		'Sefinek API': String(sefinekAPI),
+	};
+
+	try {
+		const line = stringify([row], { header: false, columns: CSV_COLUMNS });
+		await fs.appendFile(CSV_FILE, line);
+	} catch (err) {
+		logger.log(`Failed to append to CSV: ${err.stack}`, 3, true);
+	}
 };
 
-const readReportedIPs = () => {
-	if (!fs.existsSync(CSV_FILE_PATH)) return [];
+const readReportedIPs = async () => {
+	if (!existsSync(CSV_FILE)) return [];
 
-	const content = fs.readFileSync(CSV_FILE_PATH, 'utf-8');
-	return content
-		.split('\n')
-		.slice(1)
-		.filter(line => line.trim() !== '')
-		.map(line => {
-			const parts = line.split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/g);
-			if (!parts || parts.length < 9) return null;
+	try {
+		const content = await fs.readFile(CSV_FILE, 'utf-8');
+		const records = parse(content, {
+			columns: true,
+			skip_empty_lines: true,
+			trim: true,
+		});
 
-			return {
-				timestamp: Date.parse(parts[0]),
-				rayId: parts[1],
-				ip: parts[2],
-				country: parts[3],
-				hostname: parts[4],
-				endpoint: parts[5],
-				userAgent: parts[6].replace(/(^"|"$)/g, ''),
-				action: parts[7],
-				status: parts[8],
-				sefinekAPI: parts[9] === 'true',
-			};
-		})
-		.filter(item => item !== null);
+		return records.map(row => ({
+			timestamp: Date.parse(row['Timestamp']),
+			rayId: row['CF RayID'],
+			ip: row['IP'],
+			country: row['Country'],
+			hostname: row['Hostname'],
+			endpoint: row['Endpoint'],
+			userAgent: row['User-Agent'],
+			action: row['Action taken'],
+			status: row['Status'],
+			sefinekAPI: row['Sefinek API'] === 'true',
+		}));
+	} catch (err) {
+		logger.log(`Failed to read CSV: ${err.stack}`, 3, true);
+		return [];
+	}
 };
 
-const updateSefinekAPIInCSV = (rayId, reportedToSefinekAPI) => {
-	if (!fs.existsSync(CSV_FILE_PATH)) {
-		log(2, 'CSV file does not exist');
+const updateSefinekAPIInCSV = async (rayId, reportedToSefinekAPI) => {
+	if (!existsSync(CSV_FILE)) {
+		logger.log('CSV file does not exist', 2);
 		return;
 	}
 
-	const content = fs.readFileSync(CSV_FILE_PATH, 'utf-8');
-	const lines = content.split('\n');
+	try {
+		const content = await fs.readFile(CSV_FILE, 'utf-8');
+		const records = parse(content, {
+			columns: true,
+			skip_empty_lines: true,
+			trim: true,
+		});
 
-	const updatedLines = lines.map(line => {
-		const parts = line.split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/g);
-		if (parts.length >= 9 && parts[1] === rayId) {
-			parts[9] = reportedToSefinekAPI;
-			return parts.join(',');
+		let updated = false;
+		for (const row of records) {
+			if (row['CF RayID'] === rayId) {
+				row['Sefinek API'] = String(reportedToSefinekAPI);
+				updated = true;
+			}
 		}
-		return line;
-	});
 
-	fs.writeFileSync(CSV_FILE_PATH, updatedLines.join('\n'));
+		if (updated) {
+			const output = stringify(records, { header: true, columns: CSV_COLUMNS });
+			await fs.writeFile(CSV_FILE, output);
+		}
+	} catch (err) {
+		logger.log(`Failed to update CSV: ${err.stack}`, 3, true);
+	}
 };
 
 module.exports = { logToCSV, readReportedIPs, updateSefinekAPIInCSV };
