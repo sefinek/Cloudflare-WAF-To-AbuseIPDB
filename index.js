@@ -65,7 +65,7 @@ const fetchCloudflareEvents = async whitelist => {
 
 		const filtered = events.filter(event => {
 			const isL7DDoS = event?.action === 'l7ddos';
-			if (isL7DDoS) console.log(event.action);
+			console.log(`action: ${event.action}; source ${event.source}`);
 			return isL7DDoS || !isWhitelisted(event);
 		});
 
