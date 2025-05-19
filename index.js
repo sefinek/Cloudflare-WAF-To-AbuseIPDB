@@ -63,11 +63,9 @@ const fetchCloudflareEvents = async whitelist => {
 			whitelist.domains.some(domain => event.clientRequestHTTPHost?.includes(domain)) ||
 			whitelist.endpoints.some(endpoint => event.clientRequestPath?.includes(endpoint));
 
-		const filtered = events.filter(event => {
-			const isL7DDoS = event?.action === 'l7ddos';
-			console.log(`action: ${event.action}; source ${event.source}`);
-			return isL7DDoS || !isWhitelisted(event);
-		});
+		const filtered = events.filter(event =>
+			(event.action === 'l7ddos' || event.source === 'l7ddos') || !isWhitelisted(event)
+		);
 
 		logger.log(`Fetched ${events.length} Cloudflare events (${filtered.length} matching filter criteria) `, 1);
 		return filtered;
