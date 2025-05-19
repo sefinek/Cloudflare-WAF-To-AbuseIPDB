@@ -63,7 +63,11 @@ const fetchCloudflareEvents = async whitelist => {
 			whitelist.domains.some(domain => event.clientRequestHTTPHost?.includes(domain)) ||
 			whitelist.endpoints.some(endpoint => event.clientRequestPath?.includes(endpoint));
 
-		const filtered = events.filter(event => !isWhitelisted(event));
+		const filtered = events.filter(event => {
+			const isL7DDoS = event?.action === 'l7ddos';
+			if (isL7DDoS) console.log(event.action);
+			return isL7DDoS || !isWhitelisted(event);
+		});
 
 		logger.log(`Fetched ${events.length} Cloudflare events (${filtered.length} matching filter criteria) `, 1);
 		return filtered;
@@ -153,8 +157,7 @@ const processData = async () => {
 	const reportedIPsSet = new Set(reportedIPs.map(e => e.ip));
 	const events = await fetchCloudflareEvents(whitelist);
 	if (!events?.length) {
-		logger.log('No events fetched from Cloudflare. Skipping this cycle.');
-		return;
+		return logger.log('No events fetched from Cloudflare. Skipping this cycle.');
 	}
 
 	// Report IPs
