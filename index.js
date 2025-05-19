@@ -174,7 +174,7 @@ const processData = async () => {
 			continue;
 		}
 
-		const result = await reportIP(event, '14', GENERATE_COMMENT(event));
+		const result = await reportIP(event, '19', GENERATE_COMMENT(event));
 		await logToCSV(event, result.code);
 
 		if (['REPORTED', 'RL_BULK_REPORT', 'READY_FOR_BULK_REPORT'].includes(result.code)) {
