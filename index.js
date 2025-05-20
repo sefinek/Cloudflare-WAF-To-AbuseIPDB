@@ -63,10 +63,7 @@ const fetchCloudflareEvents = async whitelist => {
 			whitelist.domains.some(domain => event.clientRequestHTTPHost?.includes(domain)) ||
 			whitelist.endpoints.some(endpoint => event.clientRequestPath?.includes(endpoint));
 
-		const filtered = events.filter(event =>
-			(event.action === 'l7ddos' || event.source === 'l7ddos') || !isWhitelisted(event)
-		);
-
+		const filtered = events.filter(event => event.source === 'l7ddos' || !isWhitelisted(event));
 		logger.log(`Fetched ${events.length} Cloudflare events (${filtered.length} matching filter criteria) `, 1);
 		return filtered;
 	} catch (err) {
@@ -175,7 +172,9 @@ const processData = async () => {
 			continue;
 		}
 
-		const result = await reportIP(event, '19', GENERATE_COMMENT(event));
+		const categories = event.source === 'l7ddos' ? '4,19' : '19';
+		const result = await reportIP(event, categories, GENERATE_COMMENT(event));
+
 		await logToCSV(event, result.code);
 
 		if (['REPORTED', 'RL_BULK_REPORT', 'READY_FOR_BULK_REPORT'].includes(result.code)) {
@@ -188,9 +187,7 @@ const processData = async () => {
 			continue;
 		}
 
-		if (result.code === 'FAILED' || !['ALREADY_IN_BUFFER', 'READY_FOR_BULK_REPORT', 'RL_BULK_REPORT'].includes(result.code)) {
-			cycleErrorCounts++;
-		}
+		if (result.code === 'FAILED' || !['ALREADY_IN_BUFFER', 'READY_FOR_BULK_REPORT', 'RL_BULK_REPORT'].includes(result.code)) cycleErrorCounts++;
 	}
 
 	logger.log(`Summary » Processed: ${cycleProcessedCount}; Reported: ${cycleReportedCount}; Skipped: ${cycleSkippedCount}; Errors: ${cycleErrorCounts}`);
