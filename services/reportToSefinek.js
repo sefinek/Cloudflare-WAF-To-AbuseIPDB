@@ -1,3 +1,4 @@
+const FormData = require('form-data');
 const { SEFINEK_API } = require('../scripts/headers.js');
 const { axios } = require('../scripts/services/axios.js');
 const { readReportedIPs, updateSefinekAPIInCSV } = require('./csv.js');
@@ -18,18 +19,25 @@ module.exports = async () => {
 	if (!uniqueLogs.length) return logger.log('Sefinek API: No unique IPs to send');
 
 	try {
-		// http://127.0.0.1:4010/api/v2/cloudflare-waf-abuseipdb
-		const res = await axios.post('https://api.sefinek.net/api/v2/cloudflare-waf-abuseipdb', {
-			reportedIPs: uniqueLogs.map(ip => ({
-				rayId: ip.rayId,
-				ip: ip.ip,
-				endpoint: ip.endpoint,
-				userAgent: ip.userAgent,
-				action: ip.action,
-				country: ip.country,
-				timestamp: ip.timestamp,
-			})),
-		}, { headers: SEFINEK_API });
+		const payload = uniqueLogs.map(ip => ({
+			rayId: ip.rayId,
+			ip: ip.ip,
+			endpoint: ip.endpoint,
+			userAgent: ip.userAgent,
+			action: ip.action,
+			country: ip.country,
+			timestamp: ip.timestamp,
+		}));
+
+		const form = new FormData();
+		form.append('file', Buffer.from(JSON.stringify(payload, null, 2)), {
+			filename: 'reports.json',
+			contentType: 'application/json',
+		});
+
+		const res = await axios.post('https://api.sefinek.net/api/v2/cloudflare-waf-abuseipdb', form, {
+			headers: { ...form.getHeaders(), ...SEFINEK_API },
+		});
 
 		if (res.data.success) {
 			logger.log(`Sefinek API (status: ${res.status}): Successfully sent ${uniqueLogs.length} logs`, 1);
