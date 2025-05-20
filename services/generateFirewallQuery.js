@@ -1,4 +1,6 @@
 module.exports = (limit, zoneTag) => {
+	if (!zoneTag) throw new Error('zoneTag is null or undefined');
+
 	const variables = {
 		zoneTag,
 		filter: {
