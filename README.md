@@ -87,18 +87,28 @@ https://github.com/sefinek/Cloudflare-WAF-To-AbuseIPDB
 11. That's it! Monitor logs using the `pm2 logs` command.
 
 
-## 🔤 How to Get Tokens?
-### `CLOUDFLARE_ZONE_ID`
-![](images/brave_UY5737SsDdlS.png)
+## 🔐 Configuration – Required Tokens & IDs
+### `CLOUDFLARE_ZONE_IDS`
+- Accepts a **string** or an **array** of Zone IDs:
+  ```js
+  CLOUDFLARE_ZONE_IDS: 'zone-id-1'
+  ```
+- If you manage multiple zones, pass them as an array:
+   ```js
+  CLOUDFLARE_ZONE_IDS: ['zone-id-1', 'zone-id-2']
+  ```
+- Screenshot for reference:
+  ![](images/brave_UY5737SsDdlS.png)
 
 ### `CLOUDFLARE_API_KEY`
 1. Go to [dash.cloudflare.com/profile/api-tokens](https://dash.cloudflare.com/profile/api-tokens).
-2. Click the `Create Token` button.
-3. Select `Create Custom Token`.
-4. ![](images/brave_oWibgugvXlTH.png)
+2. Click **Create Token**.
+3. Select **Create Custom Token**.
+4. Refer to the screenshot for required permissions:
+   ![](images/brave_oWibgugvXlTH.png)
 
 ### `ABUSEIPDB_API_KEY`
-Visit [www.abuseipdb.com/account/api](https://www.abuseipdb.com/account/api).
+Visit [www.abuseipdb.com/account/api](https://www.abuseipdb.com/account/api) and copy your API key.
 
 
 ## 😉 Issues and Pull requests

@@ -48,31 +48,39 @@ const checkRateLimit = async () => {
 };
 
 const fetchCloudflareEvents = async whitelist => {
-	try {
-		const { data, status } = await axios.post('https://api.cloudflare.com/client/v4/graphql', PAYLOAD(1000), {
-			headers: headers.CLOUDFLARE,
-		});
-
-		const events = data?.data?.viewer?.zones?.[0]?.firewallEventsAdaptive;
-		if (!events) throw new Error(`Failed to retrieve data from Cloudflare (status ${status}): ${JSON.stringify(data?.errors)}`);
-
-		const isWhitelisted = event =>
-			getServerIPs().includes(event.ip) ||
-			whitelist.userAgents.some(ua => event.userAgent.includes(ua)) ||
-			whitelist.imgExtensions.some(ext => event.clientRequestPath.endsWith(ext)) ||
-			whitelist.domains.some(domain => event.clientRequestHTTPHost?.includes(domain)) ||
-			whitelist.endpoints.some(endpoint => event.clientRequestPath?.includes(endpoint));
-
-		const filtered = events.filter(event => event.source === 'l7ddos' || !isWhitelisted(event));
-		logger.log(`Fetched ${events.length} Cloudflare events (${filtered.length} matching filter criteria) `, 1);
-		return filtered;
-	} catch (err) {
-		logger.log(err.response?.data
-			? `${err.response.status} HTTP ERROR Cloudflare API: ${JSON.stringify(err.response.data, null, 2)}`
-			: `Unknown error with Cloudflare API: ${err.message}`, 3
-		);
-		return [];
+	if (MAIN.CLOUDFLARE_ZONE_IDS && MAIN.CLOUDFLARE_ZONE_ID) {
+		logger.log('Both CLOUDFLARE_ZONE_IDS and deprecated CLOUDFLARE_ZONE_ID are defined. Using CLOUDFLARE_ZONE_IDS.', 1);
 	}
+
+	const rawZoneIds = MAIN.CLOUDFLARE_ZONE_IDS || MAIN.CLOUDFLARE_ZONE_ID;
+	const zoneIds = Array.isArray(rawZoneIds) ? rawZoneIds : [rawZoneIds];
+	const allEvents = [];
+
+	for (const zoneId of zoneIds) {
+		try {
+			const { data, status } = await axios.post('https://api.cloudflare.com/client/v4/graphql', PAYLOAD(1000, zoneId), {
+				headers: headers.CLOUDFLARE,
+			});
+
+			const events = data?.data?.viewer?.zones?.[0]?.firewallEventsAdaptive;
+			if (!events) throw new Error(`Failed to retrieve data from Cloudflare (status ${status}): ${JSON.stringify(data?.errors)}`);
+
+			allEvents.push(...events);
+		} catch (err) {
+			logger.log(err.response?.data ? `${err.response.status} HTTP ERROR for zone ${zoneId}: ${JSON.stringify(err.response.data, null, 2)}` : `Unknown error for zone ${zoneId}: ${err.message}`, 3);
+		}
+	}
+
+	const isWhitelisted = event =>
+		getServerIPs().includes(event.clientIP) ||
+		whitelist.userAgents.some(ua => event.userAgent.includes(ua)) ||
+		whitelist.imgExtensions.some(ext => event.clientRequestPath.endsWith(ext)) ||
+		whitelist.domains.some(domain => event.clientRequestHTTPHost.includes(domain)) ||
+		whitelist.endpoints.some(endpoint => event.clientRequestPath.includes(endpoint));
+
+	const filtered = allEvents.filter(event => event.source === 'l7ddos' || !isWhitelisted(event));
+	logger.log(`Fetched ${allEvents.length} Cloudflare events (${filtered.length} matching filter criteria) `, 1);
+	return filtered;
 };
 
 const reportIP = async (event, categories, comment) => {
@@ -92,6 +100,7 @@ const reportIP = async (event, categories, comment) => {
 		await axios.post('https://api.abuseipdb.com/api/v2/report', {
 			ip: event.clientIP,
 			categories,
+			timestamp: event.datetime,
 			comment,
 		}, { headers: headers.ABUSEIPDB });
 

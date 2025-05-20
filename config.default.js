@@ -10,7 +10,7 @@ exports.MAIN = {
 	IPv6_SUPPORT: true, // IPv6 support: true if the device has a globally routable address assigned by the ISP.
 
 	/* --------------------------- Secret keys --------------------------- */
-	CLOUDFLARE_ZONE_ID: '00000000000000000000000000000000', // https://github.com/sefinek/Cloudflare-WAF-To-AbuseIPDB/tree/main?tab=readme-ov-file#cloudflare_zone_id
+	CLOUDFLARE_ZONE_IDS: ['11111111111111111111111111111111', '22222222222222222222222222222222'], // You can add more zone IDs here. https://github.com/sefinek/Cloudflare-WAF-To-AbuseIPDB/tree/main?tab=readme-ov-file#cloudflare_zone_id
 	CLOUDFLARE_API_KEY: '0000000000000000000000000000000000000000', // https://github.com/sefinek/Cloudflare-WAF-To-AbuseIPDB/tree/main?tab=readme-ov-file#cloudflare_api_key
 	ABUSEIPDB_API_KEY: '00000000000000000000000000000000000000000000000000000000000000000000000000000000', // https://www.abuseipdb.com/account/api
 

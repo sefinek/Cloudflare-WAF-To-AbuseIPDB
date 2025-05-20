@@ -1,11 +1,8 @@
-const { CLOUDFLARE_ZONE_ID } = require('../config.js').MAIN;
-
-module.exports = limit => {
+module.exports = (limit, zoneTag) => {
 	const variables = {
-		zoneTag: CLOUDFLARE_ZONE_ID,
+		zoneTag,
 		filter: {
 			datetime_geq: new Date(Date.now() - (60 * 60 * 12 * 1000)).toISOString(),
-			// datetime_leq: new Date(Date.now() - (60 * 60 * 8 * 1000)).toISOString(),
 			AND: [
 				{ action_neq: 'allow' },
 				{ action_neq: 'skip' },
@@ -23,7 +20,8 @@ module.exports = limit => {
 		},
 	};
 
-	return { query: `query ListFirewallEvents($zoneTag: string, $filter: FirewallEventsAdaptiveFilter_InputObject) {
+	return { query: `
+query ListFirewallEvents($zoneTag: string, $filter: FirewallEventsAdaptiveFilter_InputObject) {
   viewer {
     zones(filter: { zoneTag: $zoneTag }) {
       firewallEventsAdaptive(
@@ -48,5 +46,6 @@ module.exports = limit => {
         userAgent
       }
     }
-  }}`, variables };
+  }
+}`, variables };
 };
