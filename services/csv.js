@@ -109,7 +109,7 @@ const batchUpdateSefinekAPIInCSV = async (rayIds = []) => {
 		let updated = false;
 
 		for (const row of records) {
-			if (raySet.has(row['CF RayID'])) {
+			if (raySet.has(row['CF RayID']) && row['Sefinek API'] !== 'true') {
 				row['Sefinek API'] = 'true';
 				updated = true;
 			}

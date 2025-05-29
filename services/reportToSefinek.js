@@ -41,11 +41,10 @@ module.exports = async () => {
 
 		if (res.data.success) {
 			logger.log(`Sefinek API (status: ${res.status}): Successfully sent ${uniqueLogs.length} logs`, 1);
+			await batchUpdateSefinekAPIInCSV(uniqueLogs.map(x => x.rayId));
 		} else {
 			logger.log(`Sefinek API (status: ${res.status}): ${res.data.message || 'Something went wrong'}`, 2);
 		}
-
-		await batchUpdateSefinekAPIInCSV(uniqueLogs.map(x => x.rayId));
 	} catch (err) {
 		if (err.response?.data?.message?.includes('No valid or unique')) return;
 		const rawMsg = err.response?.data?.message;
