@@ -1,7 +1,7 @@
 const FormData = require('form-data');
 const { SEFINEK_API } = require('../scripts/headers.js');
 const { axios } = require('../scripts/services/axios.js');
-const { readReportedIPs, updateSefinekAPIInCSV } = require('./csv.js');
+const { readReportedIPs, batchUpdateSefinekAPIInCSV } = require('./csv.js');
 const { getServerIPs } = require('../scripts/services/ipFetcher.js');
 const logger = require('../scripts/logger.js');
 
@@ -45,7 +45,7 @@ module.exports = async () => {
 			logger.log(`Sefinek API (status: ${res.status}): ${res.data.message || 'Something went wrong'}`, 2);
 		}
 
-		await Promise.all(uniqueLogs.map(ip => updateSefinekAPIInCSV(ip.rayId, true)));
+		await batchUpdateSefinekAPIInCSV(uniqueLogs.map(x => x.rayId));
 	} catch (err) {
 		if (err.response?.data?.message?.includes('No valid or unique')) return;
 		const rawMsg = err.response?.data?.message;
