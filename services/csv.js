@@ -27,7 +27,7 @@ const checkCSVSize = async () => {
 		const stats = await fs.stat(CSV_FILE);
 		if (stats.size > MAX_CSV_SIZE) {
 			await fs.writeFile(CSV_FILE, stringify([], { header: true, columns: CSV_COLUMNS }));
-			logger.log(`CSV file exceeded ${MAX_CSV_SIZE / (1024 * 1024)} MB. Cleared.`, 1);
+			logger.log(`CSV file exceeded ${(MAX_CSV_SIZE / (1024 * 1024)).toFixed(2)} MB - cleared`, 1);
 		}
 	} catch (err) {
 		logger.log(`Failed to check or clear CSV size: ${err.stack}`, 3, true);
