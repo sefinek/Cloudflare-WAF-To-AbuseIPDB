@@ -225,7 +225,6 @@ const processData = async () => {
 	if (MAIN.SEFIN_API_REPORTING && MAIN.SEFIN_API_SECRET_TOKEN && MAIN.SEFIN_API_REPORT_SCHEDULE) {
 		new CronJob(MAIN.SEFIN_API_REPORT_SCHEDULE, SefinekAPI, null, true);
 	}
-	await SefinekAPI();
 
 	// Report Schedule
 	new CronJob(MAIN.REPORT_SCHEDULE, processData, null, true);
