@@ -12,8 +12,9 @@ const SefinekAPI = require('./services/reportToSefinek.js');
 const headers = require('./scripts/headers.js');
 const { logToCSV, readReportedIPs } = require('./services/csv.js');
 const getFilters = require('./services/getFilterRules.js');
-const { MAIN, GENERATE_COMMENT } = require('./config.js');
 const logger = require('./scripts/logger.js');
+require('./scripts/cliHelp.js');
+const { MAIN, GENERATE_COMMENT } = require('./config.js');
 
 const ABUSE_STATE = { isLimited: false, isBuffering: false, sentBulk: false };
 const RATE_LIMIT_LOG_INTERVAL = 10 * 60 * 1000;
@@ -236,5 +237,5 @@ const processData = async () => {
 	process.send?.('ready');
 
 	// Run on start?
-	if (MAIN.RUN_ON_START) await processData();
+	if (MAIN.RUN_ON_START || process.argv.includes('--run-on-start')) await processData();
 })();

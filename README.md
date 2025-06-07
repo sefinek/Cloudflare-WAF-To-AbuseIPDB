@@ -7,6 +7,8 @@ Also, take a look at [sefinek/UFW-AbuseIPDB-Reporter](https://github.com/sefinek
 
 > If you like this repository or find it useful, I would greatly appreciate it if you could give it a ⭐ star. Thanks a lot!
 
+> [!IMPORTANT]
+> - If you'd like to make changes to any files in this repository, please start by creating a [public fork](https://github.com/sefinek/Cloudflare-WAF-To-AbuseIPDB/fork).
 
 ## 🛠️ Requirements
 - [Node.js + npm](https://gist.github.com/sefinek/fb50041a5f456321d58104bbf3f6e649)
@@ -25,9 +27,12 @@ Also, take a look at [sefinek/UFW-AbuseIPDB-Reporter](https://github.com/sefinek
    - ~~Daily summaries of reported IPs~~
 6. **Automatic Updates** - The script regularly fetches and applies the latest updates. You can disable this if you prefer.
 
-
-## 📃 Information
-If you want to make changes to the script from this repository, please kindly [fork](https://github.com/sefinek/Cloudflare-WAF-To-AbuseIPDB/fork) it first.
+## 📃 Command-line options
+| Name               | Description                                                       |
+|--------------------|-------------------------------------------------------------------|
+| `--help`           | Displays this help message.                                       |
+| `--run-on-start`   | Starts the IP reporting cycle immediately after launch.           |
+| `--report-to-sapi` | Sends collected IPs to the Sefinek API immediately after launch.  |
 
 
 ## 🌌 Example Report
