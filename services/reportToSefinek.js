@@ -36,7 +36,10 @@ module.exports = async () => {
 		});
 
 		const res = await axios.post('https://api.sefinek.net/api/v2/cloudflare-waf-abuseipdb', form, {
-			headers: { ...form.getHeaders(), ...SEFINEK_API },
+			headers: {
+				...form.getHeaders(),
+				...SEFINEK_API.headers,
+			},
 		});
 
 		if (res.data.success) {
