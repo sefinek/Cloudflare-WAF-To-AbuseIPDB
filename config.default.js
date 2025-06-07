@@ -21,7 +21,7 @@ exports.MAIN = {
 	SUCCESS_COOLDOWN: 10, // Additional delay (in ms) after each successful report to avoid overloading the AbuseIPDB API.
 
 	/* --------------------------- Automatic Updates --------------------------- */
-	AUTO_UPDATE_ENABLED: false, // Automatic updates: true to enable auto-update via 'git pull', false to disable.
+	AUTO_UPDATE_ENABLED: false, // True to enable auto-update via 'git pull', false to disable.
 	AUTO_UPDATE_SCHEDULE: '0 15,17,18,20 * * *', // Cron schedule for automatic script updates. Default: every day at 15:00, 17:00, 18:00, 20:00
 
 	/* --------------------------- Discord Webhooks --------------------------- */
