@@ -205,7 +205,6 @@ const processData = async () => {
 (async () => {
 	banner(`Cloudflare WAF To AbuseIPDB (v${version})`);
 
-	await SefinekAPI();
 	// Auto updates
 	if (MAIN.AUTO_UPDATE_ENABLED && MAIN.AUTO_UPDATE_SCHEDULE && MAIN.SERVER_ID !== 'development') {
 		await require('./scripts/services/updates.js');
@@ -225,6 +224,8 @@ const processData = async () => {
 		new CronJob(MAIN.SEFIN_API_REPORT_SCHEDULE, SefinekAPI, null, true);
 	}
 
+	const runSefinekAPI = process.argv.find(arg => arg.startsWith('--report-to-sapi'))?.split('=')[1];
+	if (runSefinekAPI) await SefinekAPI();
 
 	// Report Schedule
 	new CronJob(MAIN.REPORT_SCHEDULE, processData, null, true);
