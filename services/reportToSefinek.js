@@ -16,7 +16,7 @@ module.exports = async () => {
 		return true;
 	});
 
-	if (!uniqueLogs.length) return logger.log('Sefinek API: No unique IPs to send');
+	if (!uniqueLogs.length) return logger.log(`Sefinek API: No unique IPs to send (reportedIPs = ${reportedIPs.length}; uniqueLogs = ${uniqueLogs.length})`);
 
 	try {
 		const payload = uniqueLogs.map(ip => ({
