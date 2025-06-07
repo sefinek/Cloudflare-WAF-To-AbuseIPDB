@@ -3,7 +3,7 @@
 
 const { CronJob } = require('cron');
 const banner = require('./scripts/banners/cloudflare.js');
-const { repoSlug, repoUrl, version } = require('./scripts/repo.js');
+const { repoSlug, repoUrl } = require('./scripts/repo.js');
 const { axios } = require('./scripts/services/axios.js');
 const { refreshServerIPs, getServerIPs } = require('./scripts/services/ipFetcher.js');
 const { saveBufferToFile, loadBufferFromFile, sendBulkReport, BULK_REPORT_BUFFER } = require('./scripts/services/bulk.js');
@@ -204,7 +204,7 @@ const processData = async () => {
 };
 
 (async () => {
-	banner(`Cloudflare WAF To AbuseIPDB (v${version})`);
+	banner();
 
 	// Auto updates
 	if (MAIN.AUTO_UPDATE_ENABLED && MAIN.AUTO_UPDATE_SCHEDULE && MAIN.SERVER_ID !== 'development') {
