@@ -3,7 +3,7 @@
 
 const { CronJob } = require('cron');
 const banner = require('./scripts/banners/cloudflare.js');
-const { name, version, repoFullUrl } = require('./scripts/repo.js');
+const { repoSlug, repoUrl, version } = require('./scripts/repo.js');
 const { axios } = require('./scripts/services/axios.js');
 const { refreshServerIPs, getServerIPs } = require('./scripts/services/ipFetcher.js');
 const { saveBufferToFile, loadBufferFromFile, sendBulkReport, BULK_REPORT_BUFFER } = require('./scripts/services/bulk.js');
@@ -12,8 +12,8 @@ const SefinekAPI = require('./services/reportToSefinek.js');
 const headers = require('./scripts/headers.js');
 const { logToCSV, readReportedIPs } = require('./services/csv.js');
 const getFilters = require('./services/getFilterRules.js');
-const logger = require('./scripts/logger.js');
 require('./scripts/cliHelp.js');
+const logger = require('./scripts/logger.js');
 const { MAIN, GENERATE_COMMENT } = require('./config.js');
 
 const ABUSE_STATE = { isLimited: false, isBuffering: false, sentBulk: false };
@@ -232,7 +232,7 @@ const processData = async () => {
 	new CronJob(MAIN.REPORT_SCHEDULE, processData, null, true);
 
 	// Ready
-	await logger.webhook(`[${name}](${repoFullUrl}) was successfully started!`, 0x59D267);
+	await logger.webhook(`[${repoSlug}](${repoUrl}) was successfully started!`, 0x59D267);
 	logger.log(`All set! ${MAIN.RUN_ON_START ? 'Starting first cycle shortly' : 'Waiting for the first scheduled cycle'}...`, 1);
 	process.send?.('ready');
 
