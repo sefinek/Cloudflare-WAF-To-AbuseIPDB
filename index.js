@@ -224,7 +224,7 @@ const processData = async () => {
 		new CronJob(MAIN.SEFIN_API_REPORT_SCHEDULE, SefinekAPI, null, true);
 	}
 
-	const runSefinekAPI = process.argv.find(arg => arg.startsWith('--report-to-sapi'))?.split('=')[1];
+	const runSefinekAPI = process.argv.includes('--report-to-sapi');
 	if (runSefinekAPI) await SefinekAPI();
 
 	// Report Schedule
