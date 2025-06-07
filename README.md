@@ -27,6 +27,7 @@ Also, take a look at [sefinek/UFW-AbuseIPDB-Reporter](https://github.com/sefinek
    - ~~Daily summaries of reported IPs~~
 6. **Automatic Updates** - The script regularly fetches and applies the latest updates. You can disable this if you prefer.
 
+
 ## 📃 Command-line options
 | Name               | Description                                                       |
 |--------------------|-------------------------------------------------------------------|
