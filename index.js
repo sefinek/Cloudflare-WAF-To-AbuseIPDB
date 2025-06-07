@@ -58,9 +58,7 @@ const fetchCloudflareEvents = async whitelist => {
 
 	for (const zoneId of zoneIds) {
 		try {
-			const { data, status } = await axios.post('https://api.cloudflare.com/client/v4/graphql', PAYLOAD(1000, zoneId), {
-				headers: headers.CLOUDFLARE,
-			});
+			const { data, status } = await axios.post('https://api.cloudflare.com/client/v4/graphql', PAYLOAD(1000, zoneId), headers.CLOUDFLARE);
 
 			const events = data?.data?.viewer?.zones?.[0]?.firewallEventsAdaptive;
 			if (!events) throw new Error(`Failed to retrieve data from Cloudflare (status ${status}): ${JSON.stringify(data?.errors)}`);
@@ -97,12 +95,12 @@ const reportIP = async (event, categories, comment) => {
 	}
 
 	try {
-		await axios.post('https://api.abuseipdb.com/api/v2/report', {
+		await axios.post('https://api.abuseipdb.com/api/v2/report', new URLSearchParams({
 			ip: event.clientIP,
 			categories,
-			timestamp: event.datetime,
 			comment,
-		}, { headers: headers.ABUSEIPDB });
+			timestamp: event.datetime,
+		}), headers.ABUSEIPDB);
 
 		logger.log(`Reported ${event.clientIP}; URI: ${event.clientRequestPath}`, 1);
 		return { success: true, code: 'REPORTED' };
@@ -207,6 +205,7 @@ const processData = async () => {
 (async () => {
 	banner(`Cloudflare WAF To AbuseIPDB (v${version})`);
 
+	await SefinekAPI();
 	// Auto updates
 	if (MAIN.AUTO_UPDATE_ENABLED && MAIN.AUTO_UPDATE_SCHEDULE && MAIN.SERVER_ID !== 'development') {
 		await require('./scripts/services/updates.js');
@@ -225,6 +224,7 @@ const processData = async () => {
 	if (MAIN.SEFIN_API_REPORTING && MAIN.SEFIN_API_SECRET_TOKEN && MAIN.SEFIN_API_REPORT_SCHEDULE) {
 		new CronJob(MAIN.SEFIN_API_REPORT_SCHEDULE, SefinekAPI, null, true);
 	}
+
 
 	// Report Schedule
 	new CronJob(MAIN.REPORT_SCHEDULE, processData, null, true);
