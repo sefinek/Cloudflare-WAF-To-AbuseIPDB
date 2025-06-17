@@ -1,9 +1,9 @@
 const FormData = require('form-data');
 const { SEFINEK_API } = require('../scripts/headers.js');
-const { sefinek } = require('../scripts/services/axios.js');
-const { readReportedIPs, batchUpdateSefinekAPIInCSV } = require('./csv.js');
-const { getServerIPs } = require('../scripts/services/ipFetcher.js');
 const logger = require('../scripts/logger.js');
+const { readReportedIPs, batchUpdateSefinekAPIInCSV } = require('./csv.js');
+const { sefinek } = require('../scripts/services/axios.js');
+const { getServerIPs } = require('../scripts/services/ipFetcher.js');
 
 module.exports = async () => {
 	const reportedIPs = (await readReportedIPs() || []).filter(x => x.status === 'REPORTED' && !getServerIPs().includes(x.ip) && !x.sefinekAPI);
