@@ -1,6 +1,6 @@
 const FormData = require('form-data');
 const { SEFINEK_API } = require('../scripts/headers.js');
-const { axios } = require('../scripts/services/axios.js');
+const { sefinek } = require('../scripts/services/axios.js');
 const { readReportedIPs, batchUpdateSefinekAPIInCSV } = require('./csv.js');
 const { getServerIPs } = require('../scripts/services/ipFetcher.js');
 const logger = require('../scripts/logger.js');
@@ -29,13 +29,14 @@ module.exports = async () => {
 			timestamp: ip.timestamp,
 		}));
 
+		const base64 = Buffer.from(JSON.stringify(payload, null, 2), 'utf8').toString('base64');
 		const form = new FormData();
-		form.append('file', Buffer.from(JSON.stringify(payload, null, 2)), {
-			filename: 'reports.json',
-			contentType: 'application/json',
+		form.append('file', Buffer.from(base64, 'utf8'), {
+			filename: 'reports.json.b64',
+			contentType: 'application/octet-stream',
 		});
 
-		const res = await axios.post('https://api.sefinek.net/api/v2/cloudflare-waf-abuseipdb', form, {
+		const res = await sefinek.post('https://api.sefinek.net/api/v2/cloudflare-waf-abuseipdb', form, {
 			headers: {
 				...form.getHeaders(),
 				...SEFINEK_API.headers,
