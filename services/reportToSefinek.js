@@ -6,7 +6,12 @@ const { sefinek } = require('../scripts/services/axios.js');
 const { getServerIPs } = require('../scripts/services/ipFetcher.js');
 
 module.exports = async () => {
-	const reportedIPs = (await readReportedIPs() || []).filter(x => (x.status === 'REPORTED' || x.status === 'READY_FOR_BULK_REPORT') && !getServerIPs().includes(x.ip) && !x.sefinekAPI);
+	const serverIPs = getServerIPs();
+	const reportedIPs = (await readReportedIPs() || []).filter(x =>
+		['REPORTED', 'READY_FOR_BULK_REPORT'].includes(x.status) &&
+		!serverIPs.includes(x.ip) &&
+		!x.sefinekAPI
+	);
 	if (!reportedIPs.length) return logger.log('Sefinek API: No data to report');
 
 	const seenIPs = new Set();
