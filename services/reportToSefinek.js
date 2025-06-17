@@ -8,7 +8,7 @@ const { getServerIPs } = require('../scripts/services/ipFetcher.js');
 module.exports = async () => {
 	const serverIPs = getServerIPs();
 	const reportedIPs = (await readReportedIPs() || []).filter(x =>
-		['REPORTED', 'READY_FOR_BULK_REPORT'].includes(x.status) &&
+		['REPORTED', 'READY_FOR_BULK_REPORT', 'RL_BULK_REPORT'].includes(x.status) &&
 		!serverIPs.includes(x.ip) &&
 		!x.sefinekAPI
 	);
