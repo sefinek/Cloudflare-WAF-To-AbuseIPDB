@@ -42,9 +42,7 @@ const saveToCSV = (events, filePath = 'report.csv') => {
 	}
 
 	ensureFile(filePath);
-	if (fs.statSync(filePath).size === 0) {
-		fs.appendFileSync(filePath, 'IP,Categories,ReportDate,Comment\n');
-	}
+	if (!fs.statSync(filePath).size) fs.appendFileSync(filePath, 'IP,Categories,ReportDate,Comment\n');
 
 	fs.appendFileSync(filePath, [...map.values()].join('\n') + '\n');
 };
@@ -62,6 +60,6 @@ const saveToTXT = (events, filePath = 'report.txt') => {
 		saveToTXT(events);
 		logger.log(`Saved ${events.length} L7 DDoS events to CSV and TXT`, 1);
 	} else {
-		logger.log('No L7 DDoS events found.');
+		logger.log('No L7 DDoS events found');
 	}
 })();
