@@ -89,7 +89,7 @@ const reportIP = async (event, categories, comment) => {
 		if (!BULK_REPORT_BUFFER.has(event.clientIP)) {
 			BULK_REPORT_BUFFER.set(event.clientIP, { categories, timestamp: event.datetime, comment });
 			await saveBufferToFile();
-			logger.log(`Queued ${event.clientIP} for bulk report (collected ${BULK_REPORT_BUFFER.size} IPs)`, 1);
+			logger.log(`Queued ${event.clientIP} [${event.source}] for bulk report (collected ${BULK_REPORT_BUFFER.size} IPs)`, 1);
 			return { success: false, code: 'READY_FOR_BULK_REPORT' };
 		}
 		return { success: false, code: 'ALREADY_IN_BUFFER' };
@@ -103,7 +103,7 @@ const reportIP = async (event, categories, comment) => {
 			timestamp: event.datetime,
 		}), headers.ABUSEIPDB);
 
-		logger.log(`Reported ${event.clientIP}; URI: ${event.clientRequestPath}`, 1);
+		logger.log(`Reported ${event.clientIP} [${event.source}]; URI: ${event.clientRequestPath}`, 1);
 		return { success: true, code: 'REPORTED' };
 	} catch (err) {
 		const status = err.response?.status ?? 'unknown';
