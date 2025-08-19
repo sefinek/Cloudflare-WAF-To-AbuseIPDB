@@ -102,7 +102,7 @@ const reportIP = async (event, categories, comment) => {
 			timestamp: event.datetime,
 		}));
 
-		logger.log(`Reported ${event.clientIP}; URI: ${event.clientRequestPath}; Source: ${event.source}`, 1);
+		logger.log(`Reported ${event.clientIP} | URI: ${event.clientRequestPath} | Source: ${event.source}`, 1);
 		return { success: true, code: 'REPORTED' };
 	} catch (err) {
 		const status = err.response?.status ?? 'unknown';
