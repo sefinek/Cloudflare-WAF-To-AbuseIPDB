@@ -58,7 +58,7 @@ const fetchCloudflareEvents = async whitelist => {
 
 	for (const zoneId of zoneIds) {
 		try {
-			const { data, status } = await axiosCloudflare.post('https://api.cloudflare.com/client/v4/graphql', PAYLOAD(1000, zoneId));
+			const { data, status } = await axiosCloudflare.post('/graphql', PAYLOAD(1000, zoneId));
 
 			const events = data?.data?.viewer?.zones?.[0]?.firewallEventsAdaptive;
 			if (!events) throw new Error(`Failed to retrieve data from Cloudflare (status ${status}): ${JSON.stringify(data?.errors)}`);
@@ -95,7 +95,7 @@ const reportIP = async (event, categories, comment) => {
 	}
 
 	try {
-		await axiosService.post('https://api.abuseipdb.com/api/v2/report', new URLSearchParams({
+		await axiosService.post('/report', new URLSearchParams({
 			ip: event.clientIP,
 			categories,
 			comment,
