@@ -71,13 +71,32 @@ const fetchCloudflareEvents = async whitelist => {
 
 	const isWhitelisted = event =>
 		getServerIPs().includes(event.clientIP) ||
-		whitelist.userAgents.some(ua => event.userAgent.includes(ua)) ||
-		whitelist.imgExtensions.some(ext => event.clientRequestPath.endsWith(ext)) ||
-		whitelist.domains.some(domain => event.clientRequestHTTPHost.includes(domain)) ||
-		whitelist.endpoints.some(endpoint => event.clientRequestPath.includes(endpoint));
+		whitelist.userAgents?.some(ua => event.userAgent?.includes(ua)) ||
+		whitelist.imgExtensions?.some(ext => event.clientRequestPath?.endsWith(ext)) ||
+		whitelist.domains?.some(domain => event.clientRequestHTTPHost?.includes(domain)) ||
+		whitelist.endpoints?.some(endpoint => event.clientRequestPath?.includes(endpoint));
 
-	const filtered = allEvents.filter(event => event.source === 'l7ddos' || !isWhitelisted(event));
-	logger.log(`Fetched ${allEvents.length} Cloudflare events (${filtered.length} matching filter criteria) `, 1);
+	const allowAllSources = !Array.isArray(MAIN.ALLOWED_SOURCES) || !MAIN.ALLOWED_SOURCES.length;
+	const allowedSources = allowAllSources ? null : new Set(MAIN.ALLOWED_SOURCES.map(s => String(s).toLowerCase()));
+
+	const filtered = allEvents.filter(event => {
+		const src = String(event.source || '').toLowerCase();
+		if (src === 'l7ddos') return true;
+		if (allowAllSources) return !isWhitelisted(event);
+		if (!allowedSources.has(src)) return false;
+		return !isWhitelisted(event);
+	});
+
+	const stats = allEvents.reduce((acc, ev) => {
+		const src = String(ev.source || '').toLowerCase();
+		const isAllowed = src === 'l7ddos' || allowAllSources || allowedSources?.has(src);
+		const key = isAllowed ? src : `${src} (ignored)`;
+		acc[key] = (acc[key] || 0) + 1;
+		return acc;
+	}, {});
+	const statsStr = Object.entries(stats).map(([src, cnt]) => `${src}: ${cnt}`).join(', ');
+
+	logger.log(`Fetched ${allEvents.length} Cloudflare events [${filtered.length} matching filter criteria]${allowAllSources ? ' [no source filtering]' : ''} [${statsStr}]`, 1);
 	return filtered;
 };
 

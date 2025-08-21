@@ -19,6 +19,7 @@ exports.MAIN = {
 	IP_REPORT_COOLDOWN: 8 * 60 * 60 * 1000, // Minimum time between reports of the same IP. Must be >= 15 minutes. Do not set values like 1 hour, as it wouldn't make sense due to rate limits.
 	MAX_URL_LENGTH: 850, // Maximum allowed URI length. Longer URLs will be rejected.
 	SUCCESS_COOLDOWN: 10, // Additional delay (in ms) after each successful report to avoid overloading the AbuseIPDB API.
+	ALLOWED_SOURCES: ['unknown', 'asn', 'country', 'ip', 'iprange', 'securitylevel', 'zonelockdown', 'waf', 'firewallrules', 'uablock', 'ratelimit', 'bic', 'hot', 'l7ddos', 'validation', 'botfight', 'apishield', 'botmanagement', 'dlp', 'firewallmanaged', 'firewallcustom', 'apishieldschemavalidation', 'apishieldtokenvalidation', 'apishieldsequencemitigation'], // Array of allowed reporting sources. Reports from sources not included in this array will be ignored. https://developers.cloudflare.com/logs/logpush/logpush-job/datasets/zone/firewall_events/#source
 
 	/* --------------------------- Automatic Updates --------------------------- */
 	AUTO_UPDATE_ENABLED: false, // True to enable auto-update via 'git pull', false to disable.
