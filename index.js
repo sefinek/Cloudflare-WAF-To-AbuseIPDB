@@ -81,17 +81,14 @@ const fetchCloudflareEvents = async whitelist => {
 
 	const filtered = allEvents.filter(event => {
 		const src = String(event.source || '').toLowerCase();
-		if (src === 'l7ddos') return true;
-		if (allowAllSources) return !isWhitelisted(event);
-		if (!allowedSources.has(src)) return false;
-		return !isWhitelisted(event);
+		if (!allowAllSources && !allowedSources.has(src)) return false;
+		return src === 'l7ddos' ? true : !isWhitelisted(event);
 	});
 
 	const stats = allEvents.reduce((acc, ev) => {
 		const src = String(ev.source || '').toLowerCase();
-		const isAllowed = src === 'l7ddos' || allowAllSources || allowedSources?.has(src);
-		const key = isAllowed ? src : `${src} (ignored)`;
-		acc[key] = (acc[key] || 0) + 1;
+		const isAllowed = allowAllSources || allowedSources?.has(src);
+		acc[isAllowed ? src : `${src} (ignored)`] = (acc[isAllowed ? src : `${src} (ignored)`] || 0) + 1;
 		return acc;
 	}, {});
 	const statsStr = Object.entries(stats).map(([src, cnt]) => `${src}: ${cnt}`).join(', ');
