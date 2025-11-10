@@ -19,6 +19,8 @@ exports.MAIN = {
 	IP_REPORT_COOLDOWN: 8 * 60 * 60 * 1000, // Minimum time between reports of the same IP. Must be >= 15 minutes. Do not set values like 1 hour, as it wouldn't make sense due to rate limits.
 	MAX_URL_LENGTH: 850, // Maximum allowed URI length. Longer URLs will be rejected.
 	SUCCESS_COOLDOWN: 10, // Additional delay (in ms) after each successful report to avoid overloading the AbuseIPDB API.
+	CLOUDFLARE_TIME_RANGE: 24 * 60 * 60 * 1000, // Time range for fetching Cloudflare events in milliseconds (default: 24h). Cloudflare limits time range to max 86400s (24h) per query.
+	CLOUDFLARE_EVENTS_LIMIT: 2500, // Maximum number of events to fetch from Cloudflare per zone. Cloudflare's GraphQL API supports up to 10000. Setting a lower limit can help reduce memory usage.
 	ALLOWED_SOURCES: ['unknown', 'asn', 'country', 'ip', 'iprange', 'securitylevel', 'zonelockdown', 'waf', 'firewallrules', 'uablock', 'ratelimit', 'bic', 'hot', 'l7ddos', 'validation', 'botfight', 'apishield', 'botmanagement', 'dlp', 'firewallmanaged', 'firewallcustom', 'apishieldschemavalidation', 'apishieldtokenvalidation', 'apishieldsequencemitigation'], // Array of allowed reporting sources. Reports from sources not included in this array will be ignored. https://developers.cloudflare.com/logs/logpush/logpush-job/datasets/zone/firewall_events/#source
 
 	/* --------------------------- Automatic Updates --------------------------- */
