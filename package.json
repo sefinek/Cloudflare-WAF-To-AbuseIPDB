@@ -14,9 +14,9 @@
   "type": "commonjs",
   "main": "index.js",
   "scripts": {
+    "m": "ncu -u && npm install && npm update",
     "pull": "git pull --recurse-submodules && pm2 restart cf-abuseipdb",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "up": "ncu -u && npm install && npm update && npm audit fix",
     "update": "git pull --recurse-submodules && npm install --omit=dev && pm2 restart cf-abuseipdb"
   },
   "dependencies": {
