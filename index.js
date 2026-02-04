@@ -48,7 +48,7 @@ const checkRateLimit = async () => {
 
 const fetchCloudflareEvents = async whitelist => {
 	if (MAIN.CLOUDFLARE_ZONE_IDS && MAIN.CLOUDFLARE_ZONE_ID) {
-		logger.info('Both CLOUDFLARE_ZONE_IDS and deprecated CLOUDFLARE_ZONE_ID are defined. Using CLOUDFLARE_ZONE_IDS.');
+		logger.info('Both CLOUDFLARE_ZONE_IDS and deprecated CLOUDFLARE_ZONE_ID are defined. Using CLOUDFLARE_ZONE_IDS.', { discord: true });
 	}
 
 	const rawZoneIds = MAIN.CLOUDFLARE_ZONE_IDS || MAIN.CLOUDFLARE_ZONE_ID;
