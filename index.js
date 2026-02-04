@@ -37,10 +37,10 @@ const checkRateLimit = async () => {
 			if (!ABUSE_STATE.sentBulk && BULK_REPORT_BUFFER.size > 0) await sendBulkReport();
 			RATELIMIT_RESET = nextRateLimitReset();
 			ABUSE_STATE.sentBulk = false;
-			logger.success(`Rate limit reset. Next reset scheduled at ${RATELIMIT_RESET.toISOString()}`);
+			logger.success(`Rate limit reset. Next reset scheduled at \`${RATELIMIT_RESET.toISOString()}\`.`, { discord: true });
 		} else if (now - LAST_RATELIMIT_LOG >= RATE_LIMIT_LOG_INTERVAL) {
 			const minutesLeft = Math.ceil((RATELIMIT_RESET.getTime() - now) / 60000);
-			logger.success(`Rate limit is still active. Collected ${BULK_REPORT_BUFFER.size} IPs. Waiting for reset in ${minutesLeft} minute(s) (${RATELIMIT_RESET.toISOString()})`);
+			logger.success(`Rate limit is still active, collected ${BULK_REPORT_BUFFER.size} IPs. Waiting for reset in ${minutesLeft} minute(s) (${RATELIMIT_RESET.toISOString()})...`);
 			LAST_RATELIMIT_LOG = now;
 		}
 	}
@@ -48,7 +48,7 @@ const checkRateLimit = async () => {
 
 const fetchCloudflareEvents = async whitelist => {
 	if (MAIN.CLOUDFLARE_ZONE_IDS && MAIN.CLOUDFLARE_ZONE_ID) {
-		logger.info('Both CLOUDFLARE_ZONE_IDS and deprecated CLOUDFLARE_ZONE_ID are defined. Using CLOUDFLARE_ZONE_IDS.', { discord: true });
+		logger.info('Both CLOUDFLARE_ZONE_IDS and deprecated CLOUDFLARE_ZONE_ID are defined. Using CLOUDFLARE_ZONE_IDS.');
 	}
 
 	const rawZoneIds = MAIN.CLOUDFLARE_ZONE_IDS || MAIN.CLOUDFLARE_ZONE_ID;
@@ -228,6 +228,9 @@ const processData = async () => {
 	} else {
 		await require('./scripts/services/version.js');
 	}
+
+	// Fetch IPs
+	await refreshServerIPs();
 
 	// Bulk Report
 	await loadBufferFromFile();
