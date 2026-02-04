@@ -1,6 +1,6 @@
 {
   "name": "cf-waf-to-abuseipdb",
-  "version": "1.10.4",
+  "version": "1.10.5",
   "homepage": "https://github.com/sefinek/Cloudflare-WAF-To-AbuseIPDB#readme",
   "bugs": {
     "url": "https://github.com/sefinek/Cloudflare-WAF-To-AbuseIPDB/issues"
@@ -20,7 +20,7 @@
     "update": "npm run pull && npm ci --omit=dev && pm2 restart cf-abuseipdb"
   },
   "dependencies": {
-    "axios": "^1.13.2",
+    "axios": "^1.13.4",
     "axios-retry": "^4.5.0",
     "cron": "^4.4.0",
     "csv-parse": "^6.1.0",
@@ -32,6 +32,6 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
-    "globals": "^16.5.0"
+    "globals": "^17.3.0"
   }
 }
