@@ -15,8 +15,10 @@ const getFilters = require('./scripts/services/cloudflare/getFilterRules.js');
 require('./scripts/cliHelp.js');
 const logger = require('./scripts/logger.js');
 const { MAIN, GENERATE_COMMENT } = require('./config.js');
+
 const RATE_LIMIT_LOG_INTERVAL = 10 * 60 * 1000;
 const BUFFER_STATS_INTERVAL = 5 * 60 * 1000;
+const MAX_BUFFER_SIZE = 100000;
 let cycleId = 1;
 
 const nextRateLimitReset = () => {
@@ -100,13 +102,18 @@ const reportIP = async (event, categories, comment) => {
 	await checkRateLimit();
 
 	if (ABUSE_STATE.isBuffering) {
-		if (!BULK_REPORT_BUFFER.has(event.clientIP)) {
-			BULK_REPORT_BUFFER.set(event.clientIP, { categories, timestamp: event.datetime, comment });
-			await saveBufferToFile();
-			logger.success(`Queued ${event.clientIP} for bulk report (collected ${BULK_REPORT_BUFFER.size} IPs, source: ${event.source})`);
-			return { success: false, code: 'READY_FOR_BULK_REPORT' };
+		if (BULK_REPORT_BUFFER.has(event.clientIP)) return { success: false, code: 'ALREADY_IN_BUFFER' };
+
+		// Check buffer size limit to prevent memory overflow
+		if (BULK_REPORT_BUFFER.size >= MAX_BUFFER_SIZE) {
+			logger.warn(`Buffer full (${MAX_BUFFER_SIZE} IPs). Skipping ${event.clientIP} to prevent memory overflow.`);
+			return { success: false, code: 'BUFFER_IS_FULL' };
 		}
-		return { success: false, code: 'ALREADY_IN_BUFFER' };
+
+		BULK_REPORT_BUFFER.set(event.clientIP, { categories, timestamp: event.datetime, comment });
+		await saveBufferToFile();
+		logger.success(`Queued ${event.clientIP} for bulk report | Collected ${BULK_REPORT_BUFFER.size} IPs | Source: ${event.source}`);
+		return { success: false, code: 'READY_FOR_BULK_REPORT' };
 	}
 
 	try {
@@ -117,10 +124,10 @@ const reportIP = async (event, categories, comment) => {
 			timestamp: event.datetime,
 		});
 
-		logger.success(`Reported ${event.clientIP} >> ${event.clientRequestPath} << ${event.source}`);
+		logger.success(`Reported ${event.clientIP}; ${event.clientRequestPath}; Source: ${event.source.toUpperCase()}`);
 		return { success: true, code: 'REPORTED' };
 	} catch (err) {
-		const status = err.response?.status ?? 'unknown';
+		const status = err.response?.status;
 		if (status === 429 && JSON.stringify(err.response?.data || {}).includes('Daily rate limit')) {
 			if (!ABUSE_STATE.isLimited) {
 				ABUSE_STATE.isLimited = true;
@@ -128,27 +135,29 @@ const reportIP = async (event, categories, comment) => {
 				ABUSE_STATE.sentBulk = false;
 				LAST_RATELIMIT_LOG = Date.now();
 				RATELIMIT_RESET = nextRateLimitReset();
-				logger.info(`Daily AbuseIPDB limit reached. Buffering reports until ${RATELIMIT_RESET.toLocaleString()}`, { discord: true });
+				logger.info(`Daily API request limit for specified endpoint reached. Reports will be buffered until \`${RATELIMIT_RESET.toLocaleString()}\`. Bulk report will be sent the following day.`, { discord: true });
 			}
 
-			if (!BULK_REPORT_BUFFER.has(event.clientIP)) {
-				BULK_REPORT_BUFFER.set(event.clientIP, { timestamp: event.datetime, categories, comment });
-				await saveBufferToFile();
-				logger.success(`Queued ${event.clientIP} for bulk report due to rate limit`);
-				return { success: false, code: 'RL_BULK_REPORT' };
+			if (BULK_REPORT_BUFFER.has(event.clientIP)) return { success: false, code: 'ALREADY_IN_BUFFER' };
+
+			if (BULK_REPORT_BUFFER.size >= MAX_BUFFER_SIZE) {
+				logger.warn(`Buffer full (${MAX_BUFFER_SIZE} IPs). Skipping ${event.clientIP} to prevent memory overflow.`);
+				return { success: false, code: 'BUFFER_IS_FULL' };
 			}
 
-			return { success: false, code: 'ALREADY_IN_BUFFER' };
+			BULK_REPORT_BUFFER.set(event.clientIP, { timestamp: event.datetime, categories, comment });
+			await saveBufferToFile();
+			logger.success(`Queued ${event.clientIP} for bulk report due to rate limit`);
+			return { success: false, code: 'RL_BULK_REPORT' };
 		}
 
-		status === 429
-			? logger.info(`Error    ${event.clientIP} >> ${err.response?.data?.errors ? JSON.stringify(err.response.data.errors) : err.message}`)
-			: logger.error(`Error    ${event.clientIP} >> ${err.response?.data?.errors ? JSON.stringify(err.response.data.errors) : err.message}`);
+		const failureMsg = `Error ${event.clientIP} >> ${err.response?.data?.message || err.message}`;
+		status === 429 ? logger.info(failureMsg) : logger.error(failureMsg);
 		return { success: false, code: 'FAILED' };
 	}
 };
 
-const knownStatuses = new Set(['TOO_MANY_REQUESTS', 'REPORTED', 'READY_FOR_BULK_REPORT', 'RL_BULK_REPORT']);
+const knownStatuses = new Set(['REPORTED', 'READY_FOR_BULK_REPORT', 'RL_BULK_REPORT']);
 const isIPReportedRecently = (event, reportedIPs) => {
 	const now = Date.now();
 	return reportedIPs.some(entry =>
