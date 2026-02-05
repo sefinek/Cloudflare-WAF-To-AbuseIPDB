@@ -6,9 +6,9 @@ module.exports = {
 		// Logging settings
 		log_date_format: 'HH:mm:ss.SSS DD.MM.YYYY',
 		merge_logs: true,
-		log_file: '~/logs/other/cf-waf-to-abuseipdb/combined.log',
-		out_file: '~/logs/other/cf-waf-to-abuseipdb/out.log',
-		error_file: '~/logs/other/cf-waf-to-abuseipdb/error.log',
+		log_file: '~/logs/cf-waf-to-abuseipdb/combined.log',
+		out_file: '~/logs/cf-waf-to-abuseipdb/out.log',
+		error_file: '~/logs/cf-waf-to-abuseipdb/error.log',
 
 		// Application restart policy
 		wait_ready: true,
