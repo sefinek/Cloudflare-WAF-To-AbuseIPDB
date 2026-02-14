@@ -1,4 +1,11 @@
 # Cloudflare WAF to AbuseIPDB ☁️🕵️
+[![Version](https://img.shields.io/github/package-json/v/sefinek/Cloudflare-WAF-To-AbuseIPDB?label=version)](https://github.com/sefinek/Cloudflare-WAF-To-AbuseIPDB)
+[![License: GPL v3](https://img.shields.io/github/license/sefinek/Cloudflare-WAF-To-AbuseIPDB)](https://www.gnu.org/licenses/gpl-3.0)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D20.0.0-339933?logo=node.js&logoColor=white)](https://nodejs.org)
+[![Last Commit](https://img.shields.io/github/last-commit/sefinek/Cloudflare-WAF-To-AbuseIPDB?label=last%20commit)](https://github.com/sefinek/Cloudflare-WAF-To-AbuseIPDB/commits)
+[![Stars](https://img.shields.io/github/stars/sefinek/Cloudflare-WAF-To-AbuseIPDB)](https://github.com/sefinek/Cloudflare-WAF-To-AbuseIPDB/stargazers)
+
+
 This project offers an automated script that collects and reports IP addresses that have triggered Cloudflare firewall events.
 In simple terms, it enables the reporting of incidents detected by Cloudflare WAF to the AbuseIPDB database.
 
