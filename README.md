@@ -122,4 +122,4 @@ If you need help or have any questions, feel free to create a new [Issue](https:
 
 
 ## 📑 [GPL-3.0 License](LICENSE)
-Copyright 2024-2025 © by [Sefinek](https://sefinek.net). All Rights Reserved.
+Copyright © 2024-2026 [Sefinek](https://sefinek.net)
