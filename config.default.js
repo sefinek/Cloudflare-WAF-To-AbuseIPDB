@@ -5,9 +5,9 @@ exports.MAIN = {
 	RUN_ON_START: true, // Should the reporting function run immediately on script start?
 
 	/* --------------------------- Network --------------------------- */
-	IP_ASSIGNMENT: 'dynamic', // IP assignment type: 'static' for a fixed IP, 'dynamic' if it may change over time.
+	IP_ASSIGNMENT: 'dynamic', // 'static' for a fixed IP, 'dynamic' if it may change over time.
 	IP_REFRESH_SCHEDULE: '0 */6 * * *', // Cron schedule for checking the public IP assigned by your ISP. Used only with dynamic IPs to prevent accidental self-reporting. If IP_ASSIGNMENT is set to 'static', the script will check your IP only once.
-	IPv6_SUPPORT: true, // IPv6 support: true if the device has a globally routable address assigned by the ISP.
+	IPv6_SUPPORT: true, // true if the device has a globally routable address assigned by the ISP.
 
 	/* --------------------------- Secret keys --------------------------- */
 	CLOUDFLARE_ZONE_IDS: ['11111111111111111111111111111111', '22222222222222222222222222222222'], // You can add more zone IDs here. https://github.com/sefinek/Cloudflare-WAF-To-AbuseIPDB/tree/main?tab=readme-ov-file#cloudflare_zone_id
@@ -24,13 +24,14 @@ exports.MAIN = {
 	ALLOWED_SOURCES: ['unknown', 'asn', 'country', 'ip', 'iprange', 'securitylevel', 'zonelockdown', 'waf', 'firewallrules', 'uablock', 'ratelimit', 'bic', 'hot', 'l7ddos', 'validation', 'botfight', 'apishield', 'botmanagement', 'dlp', 'firewallmanaged', 'firewallcustom', 'apishieldschemavalidation', 'apishieldtokenvalidation', 'apishieldsequencemitigation'], // Array of allowed reporting sources. Reports from sources not included in this array will be ignored. https://developers.cloudflare.com/logs/logpush/logpush-job/datasets/zone/firewall_events/#source
 
 	/* --------------------------- Automatic Updates --------------------------- */
-	AUTO_UPDATE_ENABLED: false, // True to enable auto-update via 'git pull', false to disable.
-	AUTO_UPDATE_SCHEDULE: '0 15,17,18,20 * * *', // Cron schedule for automatic script updates. Default: every day at 15:00, 17:00, 18:00, 20:00
+	AUTO_UPDATE_ENABLED: false, // Set to true to enable automatic updates via "git pull", false to disable. This option is discouraged due to potential future incompatibilities. Enable it only if you actively monitor the server and want the latest version.
+	AUTO_UPDATE_SCHEDULE: '0 15,17,18,20 * * *', // Cron schedule for automatic updates. Default: every day at 15:00, 17:00, 18:00, 20:00
 
 	/* --------------------------- Discord Webhooks --------------------------- */
 	DISCORD_WEBHOOK_ENABLED: false, // Enables sending Discord webhooks with error reports, execution status, and other events.
 	DISCORD_WEBHOOK_URL: '',
 	DISCORD_WEBHOOK_USERNAME: 'SERVER_ID', // Username shown as the message author. Use null for default. 'SERVER_ID' will resolve to this.MAIN.SERVER_ID.
+	DISCORD_USER_ID: '', // Discord User ID to ping on critical events. Leave empty to disable pinging.
 
 	/* --------------------------- Sefinek API --------------------------- */
 	SEFIN_API_REPORTING: false, // Enables reporting of IP addresses to api.sefinek.net (https://github.com/sefinek/Malicious-IP-Addresses). Requires SEFIN_API_SECRET_TOKEN.
