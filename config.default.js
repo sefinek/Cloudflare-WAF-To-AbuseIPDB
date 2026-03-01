@@ -36,7 +36,7 @@ exports.MAIN = {
 	/* --------------------------- Sefinek API --------------------------- */
 	SEFIN_API_REPORTING: false, // Enables reporting of IP addresses to api.sefinek.net (https://github.com/sefinek/Malicious-IP-Addresses). Requires SEFIN_API_SECRET_TOKEN.
 	SEFIN_API_SECRET_TOKEN: '',
-	SEFIN_API_REPORT_SCHEDULE: '0 */2 * * *', // CRON schedule for sending data to the Sefinek API.
+	SEFIN_API_REPORT_SCHEDULE: '0 */2 * * *', // Cron schedule for sending data to the Sefinek API.
 };
 
 // Generates a report comment. Please do not remove the source link, I would greatly appreciate it! Thank you.
