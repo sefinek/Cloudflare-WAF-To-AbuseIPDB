@@ -14,6 +14,7 @@ const PAYLOAD = require('./scripts/services/cloudflare/generateFirewallQuery.js'
 const SefinekAPI = require('./scripts/services/cloudflare/reportToSefinek.js');
 const { logToCSV, readReportedIPs } = require('./scripts/services/cloudflare/csv.js');
 const getFilters = require('./scripts/services/cloudflare/getFilterRules.js');
+const { initWhitelist, isWhitelisted } = require('./scripts/services/whitelist.js');
 require('./scripts/cliHelp.js');
 const logger = require('./scripts/logger.js');
 
@@ -71,7 +72,7 @@ const fetchCloudflareEvents = async whitelist => {
 		}
 	}
 
-	const isWhitelisted = event =>
+	const isEventWhitelisted = event =>
 		getServerIPs().includes(event.clientIP) ||
 		whitelist.userAgents?.some(ua => event.userAgent?.includes(ua)) ||
 		whitelist.imgExtensions?.some(ext => event.clientRequestPath?.endsWith(ext)) ||
@@ -84,7 +85,7 @@ const fetchCloudflareEvents = async whitelist => {
 	const filtered = allEvents.filter(event => {
 		const src = String(event.source || '').toLowerCase();
 		if (!allowAllSources && !allowedSources.has(src)) return false;
-		return src === 'l7ddos' ? true : !isWhitelisted(event);
+		return src === 'l7ddos' ? true : !isEventWhitelisted(event);
 	});
 
 	const stats = allEvents.reduce((acc, ev) => {
@@ -197,6 +198,7 @@ const processData = async () => {
 		const { clientIP, clientRequestPath } = event;
 		if (
 			ips.includes(clientIP) ||
+			isWhitelisted(clientIP) ||
 			whitelist.endpoints.includes(clientRequestPath) ||
 			clientRequestPath.length > MAIN.MAX_URL_LENGTH ||
 			reportedIPsSet.has(clientIP) ||
@@ -241,6 +243,9 @@ const processData = async () => {
 
 	// Fetch IPs
 	await refreshServerIPs();
+
+	// Whitelist
+	initWhitelist();
 
 	// Bulk Report
 	await loadBufferFromFile();
