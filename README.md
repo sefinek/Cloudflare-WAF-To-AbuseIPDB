@@ -27,14 +27,15 @@ Also, take a look at [sefinek/UFW-AbuseIPDB-Reporter](https://github.com/sefinek
 1. **Easy Configuration** - The [`config.js`](config.default.js) file allows for quick and simple configuration.
 2. **Simple Installer** - Enables fast and seamless deployment and integration.
 3. **Self-IP Protection (IPv4 & IPv6)** - Automatically excludes the server's own public and local IPs from reports, including dynamic addresses.
-4. **IP Whitelist** - Maintain a `whitelist.txt` file with IP addresses that should never be reported (e.g., your home IP when running on a VPS). The file is watched for changes and reloaded automatically.
-5. **Report Cooldown** - Prevents duplicate reports of the same IP within a configurable time window.
-6. **Bulk Reporting Support** - If the script hits a rate limit, it will immediately start buffering IP addresses and send a bulk report once the limit is lifted.
-7. **Discord Webhooks Integration**:
+4. **IP Filtering** - Local and special-purpose IP addresses will never be reported.
+5. **IP Whitelist** - Maintain a `whitelist.txt` file with IP addresses that should never be reported (e.g., your home IP when running on a VPS). The file is watched for changes and reloaded automatically.
+6. **Report Cooldown** - Prevents duplicate reports of the same IP within a configurable time window.
+7. **Bulk Reporting Support** - If the script hits a rate limit, it will immediately start buffering IP addresses and send a bulk report once the limit is lifted.
+8. **Discord Webhooks Integration**:
    - Critical notifications
    - Script error alerts
    - ~~Daily summaries of reported IPs~~
-8. **Automatic Updates** - The script regularly fetches and applies the latest updates. You can disable this if you prefer.
+9. **Automatic Updates** - The script regularly fetches and applies the latest updates. You can disable this if you prefer.
 
 
 ## 📃 Command-line options

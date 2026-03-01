@@ -14,6 +14,7 @@ const PAYLOAD = require('./scripts/services/cloudflare/generateFirewallQuery.js'
 const SefinekAPI = require('./scripts/services/cloudflare/reportToSefinek.js');
 const { logToCSV, readReportedIPs } = require('./scripts/services/cloudflare/csv.js');
 const getFilters = require('./scripts/services/cloudflare/getFilterRules.js');
+const isSpecialPurposeIP = require('./scripts/isSpecialPurposeIP.js');
 const { initWhitelist, isWhitelisted } = require('./scripts/services/whitelist.js');
 require('./scripts/cliHelp.js');
 const logger = require('./scripts/logger.js');
@@ -199,6 +200,7 @@ const processData = async () => {
 		if (
 			ips.includes(clientIP) ||
 			isWhitelisted(clientIP) ||
+			isSpecialPurposeIP(clientIP).is ||
 			whitelist.endpoints.includes(clientRequestPath) ||
 			clientRequestPath.length > MAIN.MAX_URL_LENGTH ||
 			reportedIPsSet.has(clientIP) ||
