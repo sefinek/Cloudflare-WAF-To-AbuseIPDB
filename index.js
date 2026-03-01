@@ -2,6 +2,8 @@
 //                   https://sefinek.net
 
 const { CronJob } = require('cron');
+const { MAIN, GENERATE_COMMENT } = require('./config.js');
+require('./scripts/validations/index.js')(MAIN);
 const banner = require('./scripts/banners/cloudflare.js');
 const { repoSlug, repoUrl } = require('./scripts/repo.js');
 const { axiosService, axiosCloudflare } = require('./scripts/services/axios.js');
@@ -14,7 +16,6 @@ const { logToCSV, readReportedIPs } = require('./scripts/services/cloudflare/csv
 const getFilters = require('./scripts/services/cloudflare/getFilterRules.js');
 require('./scripts/cliHelp.js');
 const logger = require('./scripts/logger.js');
-const { MAIN, GENERATE_COMMENT } = require('./config.js');
 
 const RATE_LIMIT_LOG_INTERVAL = 10 * 60 * 1000;
 const BUFFER_STATS_INTERVAL = 5 * 60 * 1000;
