@@ -20,7 +20,7 @@
     "update": "npm run pull && npm ci --omit=dev && pm2 restart cf-abuseipdb"
   },
   "dependencies": {
-    "axios": "^1.13.5",
+    "axios": "^1.13.6",
     "axios-retry": "^4.5.0",
     "cron": "^4.4.0",
     "csv-parse": "^6.1.0",
@@ -28,7 +28,7 @@
     "form-data": "^4.0.5",
     "ipaddr.js": "^2.3.0",
     "semver": "^7.7.4",
-    "simple-git": "^3.31.1"
+    "simple-git": "^3.32.3"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
