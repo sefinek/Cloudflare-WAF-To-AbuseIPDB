@@ -3,6 +3,7 @@ exports.MAIN = {
 	SERVER_ID: null, // Server identifier (e.g., 'hp-terminal', 'pl-cluster', 'de1'). Use 'development' for testing only. 'production' has no effect. Use null to leave it unset.
 	EXTENDED_LOGS: false, // true to display additional details in the logs.
 	RUN_ON_START: true, // Should the reporting function run immediately on script start?
+	CACHE_FILE: './tmp/cf-waf-to-abuseipdb.cache',
 
 	/* --------------------------- Network --------------------------- */
 	IP_ASSIGNMENT: 'dynamic', // 'static' for a fixed IP, 'dynamic' if it may change over time.
