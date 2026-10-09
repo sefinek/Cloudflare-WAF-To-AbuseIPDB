@@ -10,6 +10,7 @@ const { axiosService, axiosCloudflare } = require('./scripts/services/axios.js')
 const { refreshServerIPs, getServerIPs } = require('./scripts/services/ipFetcher.js');
 const { saveBufferToFile, loadBufferFromFile, sendBulkReport, BULK_REPORT_BUFFER } = require('./scripts/services/bulk.js');
 const ABUSE_STATE = require('./scripts/services/state.js');
+const { truncateComment } = require('./scripts/comment.js');
 const PAYLOAD = require('./scripts/services/cloudflare/generateFirewallQuery.js');
 const SefinekAPI = require('./scripts/services/cloudflare/reportToSefinek.js');
 const { logToCSV, readReportedIPs } = require('./scripts/services/cloudflare/csv.js');
@@ -102,6 +103,7 @@ const fetchCloudflareEvents = async whitelist => {
 };
 
 const reportIP = async (event, categories, comment) => {
+	comment = truncateComment(comment);
 	await checkRateLimit();
 
 	if (ABUSE_STATE.isBuffering) {
