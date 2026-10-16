@@ -35,7 +35,7 @@ Also, take a look at [sefinek/UFW-AbuseIPDB-Reporter](https://github.com/sefinek
    - Critical notifications
    - Script error alerts
    - ~~Daily summaries of reported IPs~~
-9. **Automatic Updates** - The script regularly fetches and applies the latest updates. You can disable this if you prefer.
+9. **Update Notifications** - The script periodically checks for new versions and notifies you (also via Discord) when an update is available.
 
 
 ## 📃 Command-line options

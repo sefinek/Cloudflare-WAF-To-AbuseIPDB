@@ -24,10 +24,6 @@ exports.MAIN = {
 	CLOUDFLARE_EVENTS_LIMIT: 2500, // Maximum number of events to fetch from Cloudflare per zone. Cloudflare's GraphQL API supports up to 10000. Setting a lower limit can help reduce memory usage.
 	ALLOWED_SOURCES: ['unknown', 'asn', 'country', 'ip', 'iprange', 'securitylevel', 'zonelockdown', 'waf', 'firewallrules', 'uablock', 'ratelimit', 'bic', 'hot', 'l7ddos', 'validation', 'botfight', 'apishield', 'botmanagement', 'dlp', 'firewallmanaged', 'firewallcustom', 'apishieldschemavalidation', 'apishieldtokenvalidation', 'apishieldsequencemitigation'], // Array of allowed reporting sources. Reports from sources not included in this array will be ignored. https://developers.cloudflare.com/logs/logpush/logpush-job/datasets/zone/firewall_events/#source
 
-	/* --------------------------- Automatic Updates --------------------------- */
-	AUTO_UPDATE_ENABLED: false, // Set to true to enable automatic updates via "git pull", false to disable. This option is discouraged due to potential future incompatibilities. Enable it only if you actively monitor the server and want the latest version.
-	AUTO_UPDATE_SCHEDULE: '0 15,17,18,20 * * *', // Cron schedule for automatic updates. Default: every day at 15:00, 17:00, 18:00, 20:00
-
 	/* --------------------------- Discord Webhooks --------------------------- */
 	DISCORD_WEBHOOK_ENABLED: false, // Enables sending Discord webhooks with error reports, execution status, and other events.
 	DISCORD_WEBHOOK_URL: '',

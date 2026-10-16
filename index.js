@@ -238,12 +238,8 @@ const processData = async () => {
 (async () => {
 	banner();
 
-	// Auto updates
-	if (MAIN.AUTO_UPDATE_ENABLED && MAIN.AUTO_UPDATE_SCHEDULE && MAIN.SERVER_ID !== 'development') {
-		await require('./scripts/services/updates.js')();
-	} else {
-		await require('./scripts/services/version.js');
-	}
+	// Version check
+	require('./scripts/services/version.js');
 
 	// Fetch IPs
 	await refreshServerIPs();
