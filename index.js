@@ -10,6 +10,7 @@ const { axiosService, axiosCloudflare } = require('./scripts/services/axios.js')
 const { refreshServerIPs, getServerIPs } = require('./scripts/services/ipFetcher.js');
 const { saveBufferToFile, loadBufferFromFile, sendBulkReport, BULK_REPORT_BUFFER } = require('./scripts/services/bulk.js');
 const ABUSE_STATE = require('./scripts/services/state.js');
+const reportApi = require('./scripts/services/reportApi.js');
 const { truncateComment } = require('./scripts/reporting/comment.js');
 const PAYLOAD = require('./scripts/integrations/cloudflare/generateFirewallQuery.js');
 const SefinekAPI = require('./scripts/integrations/cloudflare/reportToSefinek.js');
@@ -40,7 +41,7 @@ const checkRateLimit = async () => {
 		if (now >= RATELIMIT_RESET.getTime()) {
 			ABUSE_STATE.isLimited = false;
 			ABUSE_STATE.isBuffering = false;
-			if (!ABUSE_STATE.sentBulk && BULK_REPORT_BUFFER.size > 0) await sendBulkReport();
+			if (reportApi.supportsBulk && !ABUSE_STATE.sentBulk && BULK_REPORT_BUFFER.size > 0) await sendBulkReport();
 			RATELIMIT_RESET = nextRateLimitReset();
 			ABUSE_STATE.sentBulk = false;
 			logger.success(`Rate limit reset. Next reset scheduled at \`${RATELIMIT_RESET.toISOString()}\`.`, { discord: true });
@@ -107,6 +108,9 @@ const reportIP = async (event, categories, comment) => {
 	await checkRateLimit();
 
 	if (ABUSE_STATE.isBuffering) {
+		// Without a bulk API there is nowhere to send buffered reports, so reporting is paused until the reset
+		if (!reportApi.supportsBulk) return { success: false, code: 'DAILY_LIMIT_REACHED' };
+
 		if (BULK_REPORT_BUFFER.has(event.clientIP)) return { success: false, code: 'ALREADY_IN_BUFFER' };
 
 		// Check buffer size limit to prevent memory overflow
@@ -133,16 +137,18 @@ const reportIP = async (event, categories, comment) => {
 		return { success: true, code: 'REPORTED' };
 	} catch (err) {
 		const status = err.response?.status;
-		if (status === 429 && JSON.stringify(err.response?.data || {}).includes('Daily rate limit')) {
+		if (reportApi.isDailyLimit(err)) {
 			if (!ABUSE_STATE.isLimited) {
 				ABUSE_STATE.isLimited = true;
 				ABUSE_STATE.isBuffering = true;
 				ABUSE_STATE.sentBulk = false;
 				LAST_RATELIMIT_LOG = Date.now();
 				RATELIMIT_RESET = nextRateLimitReset();
-				logger.info(`Daily API request limit for specified endpoint reached. Reports will be buffered until \`${RATELIMIT_RESET.toLocaleString()}\`. Bulk report will be sent the following day.`, { discord: true });
+				const plan = reportApi.supportsBulk ? 'Reports will be buffered and sent as a bulk report after the reset' : `${reportApi.name} has no bulk report API, so reports are paused until the reset`;
+				logger.info(`Daily ${reportApi.name} report limit reached. ${plan} (\`${RATELIMIT_RESET.toLocaleString()}\`).`, { discord: true });
 			}
 
+			if (!reportApi.supportsBulk) return { success: false, code: 'DAILY_LIMIT_REACHED' };
 			if (BULK_REPORT_BUFFER.has(event.clientIP)) return { success: false, code: 'ALREADY_IN_BUFFER' };
 
 			if (BULK_REPORT_BUFFER.size >= MAX_BUFFER_SIZE) {
@@ -156,7 +162,7 @@ const reportIP = async (event, categories, comment) => {
 			return { success: false, code: 'RL_BULK_REPORT' };
 		}
 
-		const failureMsg = `Error ${event.clientIP} >> ${err.response?.data?.message || err.message}`;
+		const failureMsg = `Error ${event.clientIP} >> ${reportApi.formatError(err)}`;
 		status === 429 ? logger.info(failureMsg) : logger.error(failureMsg);
 		return { success: false, code: 'FAILED' };
 	}
@@ -227,7 +233,7 @@ const processData = async () => {
 			continue;
 		}
 
-		if (result.code === 'FAILED' || !['ALREADY_IN_BUFFER', 'READY_FOR_BULK_REPORT', 'RL_BULK_REPORT'].includes(result.code)) cycleErrorCounts++;
+		if (result.code === 'FAILED' || !['ALREADY_IN_BUFFER', 'READY_FOR_BULK_REPORT', 'RL_BULK_REPORT', 'DAILY_LIMIT_REACHED'].includes(result.code)) cycleErrorCounts++;
 	}
 
 	logger.info(`Summary » Processed: ${cycleProcessedCount}; Reported: ${cycleReportedCount}; Skipped: ${cycleSkippedCount}; Errors: ${cycleErrorCounts}`);
@@ -249,7 +255,7 @@ const processData = async () => {
 
 	// Bulk Report
 	await loadBufferFromFile();
-	if (BULK_REPORT_BUFFER.size > 0 && !ABUSE_STATE.isLimited) {
+	if (reportApi.supportsBulk && BULK_REPORT_BUFFER.size > 0 && !ABUSE_STATE.isLimited) {
 		logger.info(`Found ${BULK_REPORT_BUFFER.size} IPs in buffer after restart. Sending bulk report...`);
 		await sendBulkReport();
 	}
