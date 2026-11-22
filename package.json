@@ -2,7 +2,7 @@
   "name": "cf-waf-to-abuseipdb",
   "version": "1.12.5",
   "private": true,
-  "homepage": "https://github.com/sefinek/Cloudflare-WAF-To-AbuseIPDB#readme",
+  "homepage": "https://github.com/sefinek/Cloudflare-WAF-To-AbuseIPDB",
   "bugs": {
     "url": "https://github.com/sefinek/Cloudflare-WAF-To-AbuseIPDB/issues"
   },
